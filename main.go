@@ -16,9 +16,14 @@ var (
 )
 
 func main() {
-	configFile := composeTypes.ConfigFile{"/home/david/portal/docker-compose.yml", nil, nil}
-	configFiles := []composeTypes.ConfigFile{configFile}
-	configDetails := composeTypes.ConfigDetails{"3.4", "/home/david/portal/", configFiles, make(map[string]string)}
+	configFile := composeTypes.ConfigFile{
+		Filename: "docker-compose.yml",
+	}
+	configDetails := composeTypes.ConfigDetails{
+		WorkingDir:  ".",
+		ConfigFiles: []composeTypes.ConfigFile{configFile},
+		Environment: make(map[string]string),
+	}
 	project, err := composeLoader.Load(configDetails)
 	if err != nil {
 		log.Fatal(err)
