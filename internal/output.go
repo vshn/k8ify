@@ -80,7 +80,7 @@ func WriteManifests(outputDir string, deployments []apps.Deployment, services []
 			return err
 		}
 	}
-	log.Printf("wrote %d persistentVolumeClaims\n", len(services))
+	log.Printf("wrote %d persistentVolumeClaims\n", len(persistentVolumeClaims))
 
 	for _, secret := range secrets {
 		err := writeManifest(&yp, &secret, outputDir+"/"+secret.Name+"-secret.yaml")
@@ -88,7 +88,7 @@ func WriteManifests(outputDir string, deployments []apps.Deployment, services []
 			return err
 		}
 	}
-	log.Printf("wrote %d secrets\n", len(services))
+	log.Printf("wrote %d secrets\n", len(secrets))
 
 	return nil
 }
