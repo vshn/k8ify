@@ -1,11 +1,11 @@
-package main
+package util
 
 import (
 	"regexp"
 	"strings"
 )
 
-func sanitize(str string) string {
+func Sanitize(str string) string {
 	str = strings.ToLower(str)
 	// replace all non-alphanumeric characters by "-"
 	str = regexp.MustCompile("[^a-z0-9-]").ReplaceAllString(str, "-")

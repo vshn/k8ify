@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"io/ioutil"
@@ -49,7 +49,13 @@ func writeManifest(yp *printers.YAMLPrinter, obj runtime.Object, destination str
 	return nil
 }
 
-func writeManifests(deployments []apps.Deployment, services []core.Service, persistentVolumeClaims []core.PersistentVolumeClaim) error {
+func WriteManifests(outputDir string, deployments []apps.Deployment, services []core.Service, persistentVolumeClaims []core.PersistentVolumeClaim) error {
+	err := prepareOutputDir(outputDir)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
 	yp := printers.YAMLPrinter{}
 
 	for _, deployment := range deployments {

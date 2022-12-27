@@ -1,8 +1,9 @@
-package main
+package converter
 
 import (
 	"fmt"
 	composeTypes "github.com/compose-spec/compose-go/types"
+	"github.com/vshn/k8ify/pkg/util"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -22,7 +23,7 @@ func composeServiceVolumesToK8s(serviceName string, serviceVolumes []composeType
 	volumes := []core.Volume{}
 	persistentVolumeClaims := []core.PersistentVolumeClaim{}
 	for i, volume := range serviceVolumes {
-		name := sanitize(volume.Source)
+		name := util.Sanitize(volume.Source)
 		if len(name) == 0 || strings.HasPrefix(name, "claim") {
 			name = fmt.Sprintf("%s-claim%d", serviceName, i)
 		}
@@ -81,7 +82,7 @@ func composeServiceEnvironmentToK8s(composeServiceEnvironmentMapping composeType
 	return envVars
 }
 
-func composeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim) {
+func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim) {
 	replicas := new(int32)
 	*replicas = 1
 
