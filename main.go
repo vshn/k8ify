@@ -25,10 +25,12 @@ func main() {
 
 	deployments := []apps.Deployment{}
 	services := []core.Service{}
+	persistentVolumeClaims := []core.PersistentVolumeClaim{}
 	for _, composeService := range project.Services {
-		deployment, service := composeServiceToDeploymentAndService(composeService)
+		deployment, service, servicePersistentVolumeClaims := composeServiceToK8s(composeService)
 		deployments = append(deployments, deployment)
 		services = append(services, service)
+		persistentVolumeClaims = append(persistentVolumeClaims, servicePersistentVolumeClaims...)
 	}
 
 	err = prepareOutputDir(outputDir)
@@ -37,7 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = writeManifests(deployments, services)
+	err = writeManifests(deployments, services, persistentVolumeClaims)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)

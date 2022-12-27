@@ -49,7 +49,7 @@ func writeManifest(yp *printers.YAMLPrinter, obj runtime.Object, destination str
 	return nil
 }
 
-func writeManifests(deployments []apps.Deployment, services []core.Service) error {
+func writeManifests(deployments []apps.Deployment, services []core.Service, persistentVolumeClaims []core.PersistentVolumeClaim) error {
 	yp := printers.YAMLPrinter{}
 
 	for _, deployment := range deployments {
@@ -67,6 +67,14 @@ func writeManifests(deployments []apps.Deployment, services []core.Service) erro
 		}
 	}
 	log.Printf("wrote %d services\n", len(services))
+
+	for _, persistentVolumeClaim := range persistentVolumeClaims {
+		err := writeManifest(&yp, &persistentVolumeClaim, outputDir+"/"+persistentVolumeClaim.Name+"-pvc.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	log.Printf("wrote %d persistentVolumeClaims\n", len(services))
 
 	return nil
 }

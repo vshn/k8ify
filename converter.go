@@ -5,12 +5,21 @@ import (
 	composeTypes "github.com/compose-spec/compose-go/types"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func composeServiceVolumesToVolumes(serviceName string, serviceVolumes []composeTypes.ServiceVolumeConfig) ([]core.Volume, []core.VolumeMount) {
+func composeServiceStorageToK8s() map[core.ResourceName]resource.Quantity {
+	quantity := make(map[core.ResourceName]resource.Quantity)
+	quantity["storage"], _ = resource.ParseQuantity("100Mi")
+	return quantity
+}
+
+func composeServiceVolumesToK8s(serviceName string, serviceVolumes []composeTypes.ServiceVolumeConfig) ([]core.Volume, []core.VolumeMount, []core.PersistentVolumeClaim) {
 	volumeMounts := []core.VolumeMount{}
 	volumes := []core.Volume{}
+	persistentVolumeClaims := []core.PersistentVolumeClaim{}
 	for i, volume := range serviceVolumes {
 		name := fmt.Sprintf("%s-claim%d", serviceName, i)
 		volumeMounts = append(volumeMounts, core.VolumeMount{
@@ -25,11 +34,21 @@ func composeServiceVolumesToVolumes(serviceName string, serviceVolumes []compose
 				},
 			},
 		})
+		persistentVolumeClaims = append(persistentVolumeClaims, core.PersistentVolumeClaim{
+			TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "PersistentVolumeClaim"},
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Spec: core.PersistentVolumeClaimSpec{
+				AccessModes: []core.PersistentVolumeAccessMode{core.ReadWriteOnce},
+				Resources: core.ResourceRequirements{
+					Requests: composeServiceStorageToK8s(),
+				},
+			},
+		})
 	}
-	return volumes, volumeMounts
+	return volumes, volumeMounts, persistentVolumeClaims
 }
 
-func composeServicePortsToContainerPorts(composeServicePorts []composeTypes.ServicePortConfig) ([]core.ContainerPort, []core.ServicePort) {
+func composeServicePortsToK8s(composeServicePorts []composeTypes.ServicePortConfig) ([]core.ContainerPort, []core.ServicePort) {
 	containerPorts := []core.ContainerPort{}
 	servicePorts := []core.ServicePort{}
 	for _, port := range composeServicePorts {
@@ -47,7 +66,7 @@ func composeServicePortsToContainerPorts(composeServicePorts []composeTypes.Serv
 	return containerPorts, servicePorts
 }
 
-func composeServiceEnvironmentToEnvVars(composeServiceEnvironmentMapping composeTypes.MappingWithEquals) []core.EnvVar {
+func composeServiceEnvironmentToK8s(composeServiceEnvironmentMapping composeTypes.MappingWithEquals) []core.EnvVar {
 	envVars := []core.EnvVar{}
 	for key, value := range composeServiceEnvironmentMapping {
 		envVars = append(envVars, core.EnvVar{
@@ -58,16 +77,16 @@ func composeServiceEnvironmentToEnvVars(composeServiceEnvironmentMapping compose
 	return envVars
 }
 
-func composeServiceToDeploymentAndService(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service) {
+func composeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim) {
 	replicas := new(int32)
 	*replicas = 1
 
 	strategy := apps.DeploymentStrategy{}
 	strategy.Type = apps.RecreateDeploymentStrategyType
 
-	volumes, volumeMounts := composeServiceVolumesToVolumes(composeService.Name, composeService.Volumes)
-	containerPorts, servicePorts := composeServicePortsToContainerPorts(composeService.Ports)
-	envVars := composeServiceEnvironmentToEnvVars(composeService.Environment)
+	volumes, volumeMounts, persistentVolumeClaims := composeServiceVolumesToK8s(composeService.Name, composeService.Volumes)
+	containerPorts, servicePorts := composeServicePortsToK8s(composeService.Ports)
+	envVars := composeServiceEnvironmentToK8s(composeService.Environment)
 
 	container := core.Container{
 		Image:        composeService.Image,
@@ -108,5 +127,5 @@ func composeServiceToDeploymentAndService(composeService composeTypes.ServiceCon
 	service.Kind = "Service"
 	service.Name = composeService.Name
 
-	return deployment, service
+	return deployment, service, persistentVolumeClaims
 }
