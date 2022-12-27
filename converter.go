@@ -101,8 +101,9 @@ func composeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 	}
 
 	podSpec := core.PodSpec{
-		Containers: []core.Container{container},
-		Volumes:    volumes,
+		Containers:    []core.Container{container},
+		Volumes:       volumes,
+		RestartPolicy: core.RestartPolicyAlways,
 	}
 
 	templateSpec := core.PodTemplateSpec{
