@@ -5,16 +5,17 @@ import (
 	composeTypes "github.com/compose-spec/compose-go/types"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func serviceVolumesToVolumes(serviceName string, serviceVolumes []composeTypes.ServiceVolumeConfig) ([]core.Volume, []core.VolumeMount) {
+func composeServiceVolumesToVolumes(serviceName string, serviceVolumes []composeTypes.ServiceVolumeConfig) ([]core.Volume, []core.VolumeMount) {
 	volumeMounts := []core.VolumeMount{}
 	volumes := []core.Volume{}
 	for i, volume := range serviceVolumes {
 		name := fmt.Sprintf("%s-claim%d", serviceName, i)
 		volumeMounts = append(volumeMounts, core.VolumeMount{
 			MountPath: volume.Target,
-			Name: name,
+			Name:      name,
 		})
 		volumes = append(volumes, core.Volume{
 			Name: name,
@@ -28,49 +29,57 @@ func serviceVolumesToVolumes(serviceName string, serviceVolumes []composeTypes.S
 	return volumes, volumeMounts
 }
 
-func servicePortsToContainerPorts(servicePorts []composeTypes.ServicePortConfig) []core.ContainerPort {
+func composeServicePortsToContainerPorts(composeServicePorts []composeTypes.ServicePortConfig) ([]core.ContainerPort, []core.ServicePort) {
 	containerPorts := []core.ContainerPort{}
-	for _, port := range servicePorts {
+	servicePorts := []core.ServicePort{}
+	for _, port := range composeServicePorts {
 		containerPorts = append(containerPorts, core.ContainerPort{
 			ContainerPort: int32(port.Target),
 		})
+		servicePorts = append(servicePorts, core.ServicePort{
+			Name: fmt.Sprint(port.Target),
+			TargetPort: intstr.IntOrString{
+				IntVal: int32(port.Target),
+			},
+			Port: int32(port.Target),
+		})
 	}
-	return containerPorts
+	return containerPorts, servicePorts
 }
 
-func serviceEnvironmentToEnvVars(serviceEnvironmentMapping composeTypes.MappingWithEquals) []core.EnvVar {
+func composeServiceEnvironmentToEnvVars(composeServiceEnvironmentMapping composeTypes.MappingWithEquals) []core.EnvVar {
 	envVars := []core.EnvVar{}
-	for key, value := range serviceEnvironmentMapping {
+	for key, value := range composeServiceEnvironmentMapping {
 		envVars = append(envVars, core.EnvVar{
-			Name: key,
+			Name:  key,
 			Value: *value,
 		})
 	}
 	return envVars
 }
 
-func serviceToDeployment(service composeTypes.ServiceConfig) apps.Deployment {
+func composeServiceToDeploymentAndService(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service) {
 	replicas := new(int32)
 	*replicas = 1
 
 	strategy := apps.DeploymentStrategy{}
 	strategy.Type = apps.RecreateDeploymentStrategyType
 
-	volumes, volumeMounts := serviceVolumesToVolumes(service.Name, service.Volumes)
-	containerPorts := servicePortsToContainerPorts(service.Ports)
-	envVars := serviceEnvironmentToEnvVars(service.Environment)
+	volumes, volumeMounts := composeServiceVolumesToVolumes(composeService.Name, composeService.Volumes)
+	containerPorts, servicePorts := composeServicePortsToContainerPorts(composeService.Ports)
+	envVars := composeServiceEnvironmentToEnvVars(composeService.Environment)
 
 	container := core.Container{
-		Image: service.Image,
-		Name: service.Name,
-		Ports: containerPorts,
+		Image:        composeService.Image,
+		Name:         composeService.Name,
+		Ports:        containerPorts,
 		VolumeMounts: volumeMounts,
-		Env: envVars,
+		Env:          envVars,
 	}
 
 	podSpec := core.PodSpec{
 		Containers: []core.Container{container},
-		Volumes: volumes,
+		Volumes:    volumes,
 	}
 
 	templateSpec := core.PodTemplateSpec{
@@ -87,7 +96,17 @@ func serviceToDeployment(service composeTypes.ServiceConfig) apps.Deployment {
 	deployment.Spec = deploymentSpec
 	deployment.APIVersion = "apps/v1"
 	deployment.Kind = "Deployment"
-	deployment.Name = service.Name
+	deployment.Name = composeService.Name
 
-	return deployment
+	serviceSpec := core.ServiceSpec{
+		Ports: servicePorts,
+	}
+
+	service := core.Service{}
+	service.Spec = serviceSpec
+	service.APIVersion = "v1"
+	service.Kind = "Service"
+	service.Name = composeService.Name
+
+	return deployment, service
 }

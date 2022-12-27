@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/printers"
 	"log"
@@ -48,16 +49,24 @@ func writeManifest(yp *printers.YAMLPrinter, obj runtime.Object, destination str
 	return nil
 }
 
-func writeManifests(deployments []apps.Deployment) error {
+func writeManifests(deployments []apps.Deployment, services []core.Service) error {
 	yp := printers.YAMLPrinter{}
 
 	for _, deployment := range deployments {
-		err := writeManifest(&yp, &deployment, outputDir+"/deployment-"+deployment.Name+".yaml")
+		err := writeManifest(&yp, &deployment, outputDir+"/"+deployment.Name+"-deployment.yaml")
 		if err != nil {
 			return err
 		}
 	}
 	log.Printf("wrote %d deployments\n", len(deployments))
+
+	for _, service := range services {
+		err := writeManifest(&yp, &service, outputDir+"/"+service.Name+"-service.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	log.Printf("wrote %d services\n", len(services))
 
 	return nil
 }

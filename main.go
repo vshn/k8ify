@@ -4,6 +4,7 @@ import (
 	composeLoader "github.com/compose-spec/compose-go/loader"
 	composeTypes "github.com/compose-spec/compose-go/types"
 	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
 	"log"
 	"os"
 )
@@ -23,8 +24,11 @@ func main() {
 	}
 
 	deployments := []apps.Deployment{}
-	for _, service := range project.Services {
-		deployments = append(deployments, serviceToDeployment(service))
+	services := []core.Service{}
+	for _, composeService := range project.Services {
+		deployment, service := composeServiceToDeploymentAndService(composeService)
+		deployments = append(deployments, deployment)
+		services = append(services, service)
 	}
 
 	err = prepareOutputDir(outputDir)
@@ -33,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = writeManifests(deployments)
+	err = writeManifests(deployments, services)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
