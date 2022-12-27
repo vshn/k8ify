@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"strings"
 )
 
 func composeServiceStorageToK8s() map[core.ResourceName]resource.Quantity {
@@ -21,7 +22,10 @@ func composeServiceVolumesToK8s(serviceName string, serviceVolumes []composeType
 	volumes := []core.Volume{}
 	persistentVolumeClaims := []core.PersistentVolumeClaim{}
 	for i, volume := range serviceVolumes {
-		name := fmt.Sprintf("%s-claim%d", serviceName, i)
+		name := sanitize(volume.Source)
+		if len(name) == 0 || strings.HasPrefix(name, "claim") {
+			name = fmt.Sprintf("%s-claim%d", serviceName, i)
+		}
 		volumeMounts = append(volumeMounts, core.VolumeMount{
 			MountPath: volume.Target,
 			Name:      name,

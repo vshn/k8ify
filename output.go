@@ -69,7 +69,7 @@ func writeManifests(deployments []apps.Deployment, services []core.Service, pers
 	log.Printf("wrote %d services\n", len(services))
 
 	for _, persistentVolumeClaim := range persistentVolumeClaims {
-		err := writeManifest(&yp, &persistentVolumeClaim, outputDir+"/"+persistentVolumeClaim.Name+"-pvc.yaml")
+		err := writeManifest(&yp, &persistentVolumeClaim, outputDir+"/"+persistentVolumeClaim.Name+"-persistentvolumeclaim.yaml")
 		if err != nil {
 			return err
 		}
