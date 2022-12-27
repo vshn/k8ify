@@ -12,16 +12,21 @@ import (
 )
 
 var (
-	outputDir = "manifests"
+	outputDir   = "manifests"
+	configFiles = [4]string{"compose.yml", "docker-compose.yml", "compose-k8ify.yml", "docker-compose-k8ify.yml"}
 )
 
 func main() {
-	configFile := composeTypes.ConfigFile{
-		Filename: "docker-compose.yml",
+	composeConfigFiles := []composeTypes.ConfigFile{}
+	for _, configFile := range configFiles {
+		if _, err := os.Stat(configFile); err == nil {
+			composeConfigFiles = append(composeConfigFiles, composeTypes.ConfigFile{
+				Filename: configFile,
+			})
+		}
 	}
 	configDetails := composeTypes.ConfigDetails{
-		WorkingDir:  ".",
-		ConfigFiles: []composeTypes.ConfigFile{configFile},
+		ConfigFiles: composeConfigFiles,
 		Environment: make(map[string]string),
 	}
 	project, err := composeLoader.Load(configDetails)
