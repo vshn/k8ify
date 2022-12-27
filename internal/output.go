@@ -49,7 +49,7 @@ func writeManifest(yp *printers.YAMLPrinter, obj runtime.Object, destination str
 	return nil
 }
 
-func WriteManifests(outputDir string, deployments []apps.Deployment, services []core.Service, persistentVolumeClaims []core.PersistentVolumeClaim) error {
+func WriteManifests(outputDir string, deployments []apps.Deployment, services []core.Service, persistentVolumeClaims []core.PersistentVolumeClaim, secrets []core.Secret) error {
 	err := prepareOutputDir(outputDir)
 	if err != nil {
 		log.Fatal(err)
@@ -81,6 +81,14 @@ func WriteManifests(outputDir string, deployments []apps.Deployment, services []
 		}
 	}
 	log.Printf("wrote %d persistentVolumeClaims\n", len(services))
+
+	for _, secret := range secrets {
+		err := writeManifest(&yp, &secret, outputDir+"/"+secret.Name+"-secret.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	log.Printf("wrote %d secrets\n", len(services))
 
 	return nil
 }

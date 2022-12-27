@@ -1,5 +1,6 @@
-manifests
-compose.yml
-compose-k8ify.yml
-docker-compose.yml
-docker-compose-k8ify.yml
+/manifests
+/compose.yml
+/compose-k8ify.yml
+/docker-compose.yml
+/docker-compose-k8ify.yml
+/env

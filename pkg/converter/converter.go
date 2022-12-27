@@ -82,7 +82,7 @@ func composeServiceEnvironmentToK8s(composeServiceEnvironmentMapping composeType
 	return envVars
 }
 
-func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim) {
+func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim, core.Secret) {
 	replicas := new(int32)
 	*replicas = 1
 
@@ -96,12 +96,34 @@ func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 	containerPorts, servicePorts := composeServicePortsToK8s(composeService.Ports)
 	envVars := composeServiceEnvironmentToK8s(composeService.Environment)
 
+	stringData := make(map[string]string)
+	for _, envVar := range envVars {
+		stringData[envVar.Name] = envVar.Value
+	}
+	secret := core.Secret{}
+	secret.APIVersion = "v1"
+	secret.Kind = "Secret"
+	secret.Name = composeService.Name + "-env"
+	secret.Labels = labels
+	secret.StringData = stringData
+
 	container := core.Container{
 		Image:        composeService.Image,
 		Name:         composeService.Name,
 		Ports:        containerPorts,
 		VolumeMounts: volumeMounts,
-		Env:          envVars,
+		// We COULD put the environment variables here, but because some of them likely contain sensitive data they are stored in a secret instead
+		// Env:          envVars,
+		// Reference the secret:
+		EnvFrom: []core.EnvFromSource{
+			core.EnvFromSource{
+				SecretRef: &core.SecretEnvSource{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: secret.Name,
+					},
+				},
+			},
+		},
 	}
 
 	podSpec := core.PodSpec{
@@ -143,5 +165,5 @@ func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 		persistentVolumeClaim.Labels = labels
 	}
 
-	return deployment, service, persistentVolumeClaims
+	return deployment, service, persistentVolumeClaims, secret
 }

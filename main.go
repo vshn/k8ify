@@ -5,6 +5,7 @@ import (
 	composeTypes "github.com/compose-spec/compose-go/types"
 	"github.com/vshn/k8ify/internal"
 	"github.com/vshn/k8ify/pkg/converter"
+	"github.com/vshn/k8ify/pkg/util"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"log"
@@ -14,6 +15,7 @@ import (
 var (
 	outputDir   = "manifests"
 	configFiles = [4]string{"compose.yml", "docker-compose.yml", "compose-k8ify.yml", "docker-compose-k8ify.yml"}
+	env         = "prod"
 )
 
 func main() {
@@ -27,7 +29,7 @@ func main() {
 	}
 	configDetails := composeTypes.ConfigDetails{
 		ConfigFiles: composeConfigFiles,
-		Environment: make(map[string]string),
+		Environment: util.GetEnv(env + "_"),
 	}
 	project, err := composeLoader.Load(configDetails)
 	if err != nil {
@@ -38,14 +40,16 @@ func main() {
 	deployments := []apps.Deployment{}
 	services := []core.Service{}
 	persistentVolumeClaims := []core.PersistentVolumeClaim{}
+	secrets := []core.Secret{}
 	for _, composeService := range project.Services {
-		deployment, service, servicePersistentVolumeClaims := converter.ComposeServiceToK8s(composeService)
+		deployment, service, servicePersistentVolumeClaims, secret := converter.ComposeServiceToK8s(composeService)
 		deployments = append(deployments, deployment)
 		services = append(services, service)
 		persistentVolumeClaims = append(persistentVolumeClaims, servicePersistentVolumeClaims...)
+		secrets = append(secrets, secret)
 	}
 
-	err = internal.WriteManifests(outputDir, deployments, services, persistentVolumeClaims)
+	err = internal.WriteManifests(outputDir, deployments, services, persistentVolumeClaims, secrets)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
