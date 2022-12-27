@@ -88,6 +88,9 @@ func composeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 	strategy := apps.DeploymentStrategy{}
 	strategy.Type = apps.RecreateDeploymentStrategyType
 
+	labels := make(map[string]string)
+	labels["k8ify.service"] = composeService.Name
+
 	volumes, volumeMounts, persistentVolumeClaims := composeServiceVolumesToK8s(composeService.Name, composeService.Volumes)
 	containerPorts, servicePorts := composeServicePortsToK8s(composeService.Ports)
 	envVars := composeServiceEnvironmentToK8s(composeService.Environment)
@@ -121,9 +124,11 @@ func composeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 	deployment.APIVersion = "apps/v1"
 	deployment.Kind = "Deployment"
 	deployment.Name = composeService.Name
+	deployment.Labels = labels
 
 	serviceSpec := core.ServiceSpec{
-		Ports: servicePorts,
+		Ports:    servicePorts,
+		Selector: labels,
 	}
 
 	service := core.Service{}
@@ -131,6 +136,11 @@ func composeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 	service.APIVersion = "v1"
 	service.Kind = "Service"
 	service.Name = composeService.Name
+	service.Labels = labels
+
+	for _, persistentVolumeClaim := range persistentVolumeClaims {
+		persistentVolumeClaim.Labels = labels
+	}
 
 	return deployment, service, persistentVolumeClaims
 }
