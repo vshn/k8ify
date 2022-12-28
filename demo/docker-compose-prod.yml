@@ -1,0 +1,11 @@
+version: '3.4'
+services:
+  portal:
+    image: image-registry.openshift-image-registry.svc:5000/portal/portal:latest
+    labels:
+      k8ify.expose: 'portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud'
+    environment:
+      - mongodb_hostname=mongo
+      - mongodb_username=portal
+      - mongodb_password=$prod_mongodb_password
+      - mongodb_disable_tls=true

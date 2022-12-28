@@ -1,0 +1,31 @@
+version: '3.4'
+services:
+  mongo:
+    image: mongo:4.0
+    restart: always
+    ports:
+      - '127.0.0.1:27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+  portal:
+    image: vshn/portal:dev
+    build:
+      target: base
+      context: .
+      args:
+        USER_ID: ${UID:-0}
+        GROUP_ID: ${GID:-0}
+    ports:
+      - "9001:9000"
+      - "8001:8000"
+    volumes:
+      - ./:/src
+    command: sbt run
+    stdin_open: true
+    tty: true
+    user: ${UID:-0}:${GID:-0}
+    environment:
+      - mongodb_hostname=localhost
+      - mongodb_database=portal
+volumes:
+  mongodb_data:
