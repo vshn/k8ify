@@ -175,20 +175,20 @@ func composeServiceToIngress(composeService composeTypes.ServiceConfig, service 
 	for i, port := range service.Spec.Ports {
 		// we expect the config to be in "k8ify.expose.PORT"
 		configPrefix := fmt.Sprintf("k8ify.expose.%d", port.Port)
-		ingressConfig := util.SubConfig(composeService.Labels, configPrefix, "url")
-		if _, ok := ingressConfig["url"]; !ok && i == 0 {
+		ingressConfig := util.SubConfig(composeService.Labels, configPrefix, "host")
+		if _, ok := ingressConfig["host"]; !ok && i == 0 {
 			// for the first port we also accept config in "k8ify.expose"
-			ingressConfig = util.SubConfig(composeService.Labels, "k8ify.expose", "url")
+			ingressConfig = util.SubConfig(composeService.Labels, "k8ify.expose", "host")
 		}
 
-		if url, ok := ingressConfig["url"]; ok {
-			port := networking.ServiceBackendPort{
+		if host, ok := ingressConfig["host"]; ok {
+			serviceBackendPort := networking.ServiceBackendPort{
 				Number: service.Spec.Ports[0].Port,
 			}
 
 			ingressServiceBackend := networking.IngressServiceBackend{
 				Name: composeService.Name,
-				Port: port,
+				Port: serviceBackendPort,
 			}
 
 			ingressBackend := networking.IngressBackend{
@@ -211,7 +211,7 @@ func composeServiceToIngress(composeService composeTypes.ServiceConfig, service 
 			}
 
 			ingressRule := networking.IngressRule{
-				Host:             url,
+				Host:             host,
 				IngressRuleValue: ingressRuleValue,
 			}
 
