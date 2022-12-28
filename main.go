@@ -30,7 +30,7 @@ func main() {
 	}
 	configDetails := composeTypes.ConfigDetails{
 		ConfigFiles: composeConfigFiles,
-		Environment: util.GetEnv(env + "_"),
+		Environment: util.GetEnv(),
 	}
 	project, err := composeLoader.Load(configDetails)
 	if err != nil {
