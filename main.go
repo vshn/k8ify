@@ -8,6 +8,7 @@ import (
 	"github.com/vshn/k8ify/pkg/util"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	networking "k8s.io/api/networking/v1"
 	"log"
 	"os"
 )
@@ -41,15 +42,17 @@ func main() {
 	services := []core.Service{}
 	persistentVolumeClaims := []core.PersistentVolumeClaim{}
 	secrets := []core.Secret{}
+	ingresses := []networking.Ingress{}
 	for _, composeService := range project.Services {
-		deployment, service, servicePersistentVolumeClaims, secret := converter.ComposeServiceToK8s(composeService)
+		deployment, service, servicePersistentVolumeClaims, secret, serviceIngresses := converter.ComposeServiceToK8s(composeService)
 		deployments = append(deployments, deployment)
 		services = append(services, service)
 		persistentVolumeClaims = append(persistentVolumeClaims, servicePersistentVolumeClaims...)
 		secrets = append(secrets, secret)
+		ingresses = append(ingresses, serviceIngresses...)
 	}
 
-	err = internal.WriteManifests(outputDir, deployments, services, persistentVolumeClaims, secrets)
+	err = internal.WriteManifests(outputDir, deployments, services, persistentVolumeClaims, secrets, ingresses)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)

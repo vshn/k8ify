@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	networking "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/printers"
 	"log"
@@ -49,7 +50,7 @@ func writeManifest(yp *printers.YAMLPrinter, obj runtime.Object, destination str
 	return nil
 }
 
-func WriteManifests(outputDir string, deployments []apps.Deployment, services []core.Service, persistentVolumeClaims []core.PersistentVolumeClaim, secrets []core.Secret) error {
+func WriteManifests(outputDir string, deployments []apps.Deployment, services []core.Service, persistentVolumeClaims []core.PersistentVolumeClaim, secrets []core.Secret, ingresses []networking.Ingress) error {
 	err := prepareOutputDir(outputDir)
 	if err != nil {
 		log.Fatal(err)
@@ -89,6 +90,14 @@ func WriteManifests(outputDir string, deployments []apps.Deployment, services []
 		}
 	}
 	log.Printf("wrote %d secrets\n", len(secrets))
+
+	for _, ingress := range ingresses {
+		err := writeManifest(&yp, &ingress, outputDir+"/"+ingress.Name+"-ingress.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	log.Printf("wrote %d ingresses\n", len(ingresses))
 
 	return nil
 }

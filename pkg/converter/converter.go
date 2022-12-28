@@ -6,9 +6,11 @@ import (
 	"github.com/vshn/k8ify/pkg/util"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	networking "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"strconv"
 	"strings"
 )
 
@@ -63,15 +65,19 @@ func composeServicePortsToK8s(composeServicePorts []composeTypes.ServicePortConf
 	containerPorts := []core.ContainerPort{}
 	servicePorts := []core.ServicePort{}
 	for _, port := range composeServicePorts {
+		publishedPort, err := strconv.Atoi(port.Published)
+		if err != nil {
+			publishedPort = int(port.Target)
+		}
 		containerPorts = append(containerPorts, core.ContainerPort{
 			ContainerPort: int32(port.Target),
 		})
 		servicePorts = append(servicePorts, core.ServicePort{
-			Name: fmt.Sprint(port.Target),
+			Name: fmt.Sprint(publishedPort),
+			Port: int32(publishedPort),
 			TargetPort: intstr.IntOrString{
 				IntVal: int32(port.Target),
 			},
-			Port: int32(port.Target),
 		})
 	}
 	return containerPorts, servicePorts
@@ -164,7 +170,68 @@ func composeServiceToService(composeService composeTypes.ServiceConfig, serviceP
 	return service
 }
 
-func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim, core.Secret) {
+func composeServiceToIngress(composeService composeTypes.ServiceConfig, service core.Service, labels map[string]string) []networking.Ingress {
+	ingresses := []networking.Ingress{}
+	for i, port := range service.Spec.Ports {
+		// we expect the config to be in "k8ify.expose.PORT"
+		configPrefix := fmt.Sprintf("k8ify.expose.%d", port.Port)
+		ingressConfig := util.SubConfig(composeService.Labels, configPrefix, "url")
+		if _, ok := ingressConfig["url"]; !ok && i == 0 {
+			// for the first port we also accept config in "k8ify.expose"
+			ingressConfig = util.SubConfig(composeService.Labels, "k8ify.expose", "url")
+		}
+
+		if url, ok := ingressConfig["url"]; ok {
+			port := networking.ServiceBackendPort{
+				Number: service.Spec.Ports[0].Port,
+			}
+
+			ingressServiceBackend := networking.IngressServiceBackend{
+				Name: composeService.Name,
+				Port: port,
+			}
+
+			ingressBackend := networking.IngressBackend{
+				Service: &ingressServiceBackend,
+			}
+
+			pathType := networking.PathTypePrefix
+			path := networking.HTTPIngressPath{
+				PathType: &pathType,
+				Path:     "/",
+				Backend:  ingressBackend,
+			}
+
+			httpIngressRuleValue := networking.HTTPIngressRuleValue{
+				Paths: []networking.HTTPIngressPath{path},
+			}
+
+			ingressRuleValue := networking.IngressRuleValue{
+				HTTP: &httpIngressRuleValue,
+			}
+
+			ingressRule := networking.IngressRule{
+				Host:             url,
+				IngressRuleValue: ingressRuleValue,
+			}
+
+			ingressSpec := networking.IngressSpec{
+				Rules: []networking.IngressRule{ingressRule},
+			}
+
+			ingress := networking.Ingress{}
+			ingress.Spec = ingressSpec
+			ingress.APIVersion = "v1"
+			ingress.Kind = "Ingress"
+			ingress.Name = composeService.Name
+			ingress.Labels = labels
+			ingresses = append(ingresses, ingress)
+		}
+	}
+	return ingresses
+}
+
+func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim, core.Secret, []networking.Ingress) {
 	labels := make(map[string]string)
 	labels["k8ify.service"] = composeService.Name
 
@@ -173,6 +240,7 @@ func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 	secret := composeServiceToSecret(composeService, labels)
 	deployment := composeServiceToDeployment(composeService, containerPorts, volumes, volumeMounts, secret.Name, labels)
 	service := composeServiceToService(composeService, servicePorts, labels)
+	ingresses := composeServiceToIngress(composeService, service, labels)
 
-	return deployment, service, persistentVolumeClaims, secret
+	return deployment, service, persistentVolumeClaims, secret, ingresses
 }
