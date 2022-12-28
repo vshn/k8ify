@@ -14,8 +14,8 @@ import (
 
 var (
 	outputDir   = "manifests"
-	configFiles = [4]string{"compose.yml", "docker-compose.yml", "compose-k8ify.yml", "docker-compose-k8ify.yml"}
 	env         = "prod"
+	configFiles = [4]string{"compose.yml", "docker-compose.yml", "compose-" + env + ".yml", "docker-compose-" + env + ".yml"}
 )
 
 func main() {
