@@ -18,7 +18,7 @@ func composeServiceStorageToK8s() map[core.ResourceName]resource.Quantity {
 	return quantity
 }
 
-func composeServiceVolumesToK8s(serviceName string, serviceVolumes []composeTypes.ServiceVolumeConfig) ([]core.Volume, []core.VolumeMount, []core.PersistentVolumeClaim) {
+func composeServiceVolumesToK8s(serviceName string, serviceVolumes []composeTypes.ServiceVolumeConfig, labels map[string]string) ([]core.Volume, []core.VolumeMount, []core.PersistentVolumeClaim) {
 	volumeMounts := []core.VolumeMount{}
 	volumes := []core.Volume{}
 	persistentVolumeClaims := []core.PersistentVolumeClaim{}
@@ -40,8 +40,14 @@ func composeServiceVolumesToK8s(serviceName string, serviceVolumes []composeType
 			},
 		})
 		persistentVolumeClaims = append(persistentVolumeClaims, core.PersistentVolumeClaim{
-			TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "PersistentVolumeClaim"},
-			ObjectMeta: metav1.ObjectMeta{Name: name},
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "PersistentVolumeClaim",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   name,
+				Labels: labels,
+			},
 			Spec: core.PersistentVolumeClaimSpec{
 				AccessModes: []core.PersistentVolumeAccessMode{core.ReadWriteOnce},
 				Resources: core.ResourceRequirements{
@@ -71,34 +77,10 @@ func composeServicePortsToK8s(composeServicePorts []composeTypes.ServicePortConf
 	return containerPorts, servicePorts
 }
 
-func composeServiceEnvironmentToK8s(composeServiceEnvironmentMapping composeTypes.MappingWithEquals) []core.EnvVar {
-	envVars := []core.EnvVar{}
-	for key, value := range composeServiceEnvironmentMapping {
-		envVars = append(envVars, core.EnvVar{
-			Name:  key,
-			Value: *value,
-		})
-	}
-	return envVars
-}
-
-func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim, core.Secret) {
-	replicas := new(int32)
-	*replicas = 1
-
-	strategy := apps.DeploymentStrategy{}
-	strategy.Type = apps.RecreateDeploymentStrategyType
-
-	labels := make(map[string]string)
-	labels["k8ify.service"] = composeService.Name
-
-	volumes, volumeMounts, persistentVolumeClaims := composeServiceVolumesToK8s(composeService.Name, composeService.Volumes)
-	containerPorts, servicePorts := composeServicePortsToK8s(composeService.Ports)
-	envVars := composeServiceEnvironmentToK8s(composeService.Environment)
-
+func composeServiceToSecret(composeService composeTypes.ServiceConfig, labels map[string]string) core.Secret {
 	stringData := make(map[string]string)
-	for _, envVar := range envVars {
-		stringData[envVar.Name] = envVar.Value
+	for key, value := range composeService.Environment {
+		stringData[key] = *value
 	}
 	secret := core.Secret{}
 	secret.APIVersion = "v1"
@@ -106,6 +88,22 @@ func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 	secret.Name = composeService.Name + "-env"
 	secret.Labels = labels
 	secret.StringData = stringData
+	return secret
+}
+
+func composeServiceToDeployment(
+	composeService composeTypes.ServiceConfig,
+	containerPorts []core.ContainerPort,
+	volumes []core.Volume,
+	volumeMounts []core.VolumeMount,
+	secretName string,
+	labels map[string]string) apps.Deployment {
+
+	replicas := new(int32)
+	*replicas = 1
+
+	strategy := apps.DeploymentStrategy{}
+	strategy.Type = apps.RecreateDeploymentStrategyType
 
 	container := core.Container{
 		Image:        composeService.Image,
@@ -119,7 +117,7 @@ func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 			core.EnvFromSource{
 				SecretRef: &core.SecretEnvSource{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: secret.Name,
+						Name: secretName,
 					},
 				},
 			},
@@ -149,21 +147,32 @@ func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deploy
 	deployment.Name = composeService.Name
 	deployment.Labels = labels
 
+	return deployment
+}
+
+func composeServiceToService(composeService composeTypes.ServiceConfig, servicePorts []core.ServicePort, labels map[string]string) core.Service {
 	serviceSpec := core.ServiceSpec{
 		Ports:    servicePorts,
 		Selector: labels,
 	}
-
 	service := core.Service{}
 	service.Spec = serviceSpec
 	service.APIVersion = "v1"
 	service.Kind = "Service"
 	service.Name = composeService.Name
 	service.Labels = labels
+	return service
+}
 
-	for _, persistentVolumeClaim := range persistentVolumeClaims {
-		persistentVolumeClaim.Labels = labels
-	}
+func ComposeServiceToK8s(composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim, core.Secret) {
+	labels := make(map[string]string)
+	labels["k8ify.service"] = composeService.Name
+
+	volumes, volumeMounts, persistentVolumeClaims := composeServiceVolumesToK8s(composeService.Name, composeService.Volumes, labels)
+	containerPorts, servicePorts := composeServicePortsToK8s(composeService.Ports)
+	secret := composeServiceToSecret(composeService, labels)
+	deployment := composeServiceToDeployment(composeService, containerPorts, volumes, volumeMounts, secret.Name, labels)
+	service := composeServiceToService(composeService, servicePorts, labels)
 
 	return deployment, service, persistentVolumeClaims, secret
 }
