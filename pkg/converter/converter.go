@@ -182,8 +182,14 @@ func composeServiceToIngress(composeService composeTypes.ServiceConfig, service 
 		}
 
 		if host, ok := ingressConfig["host"]; ok {
+			ingress := networking.Ingress{}
+			ingress.APIVersion = "v1"
+			ingress.Kind = "Ingress"
+			ingress.Name = fmt.Sprintf("%s-%d", composeService.Name, service.Spec.Ports[i].Port)
+			ingress.Labels = labels
+
 			serviceBackendPort := networking.ServiceBackendPort{
-				Number: service.Spec.Ports[0].Port,
+				Number: service.Spec.Ports[i].Port,
 			}
 
 			ingressServiceBackend := networking.IngressServiceBackend{
@@ -215,16 +221,17 @@ func composeServiceToIngress(composeService composeTypes.ServiceConfig, service 
 				IngressRuleValue: ingressRuleValue,
 			}
 
-			ingressSpec := networking.IngressSpec{
-				Rules: []networking.IngressRule{ingressRule},
+			ingressTls := networking.IngressTLS{
+				Hosts:      []string{host},
+				SecretName: fmt.Sprintf("%s-tls", ingress.Name),
 			}
 
-			ingress := networking.Ingress{}
+			ingressSpec := networking.IngressSpec{
+				Rules: []networking.IngressRule{ingressRule},
+				TLS:   []networking.IngressTLS{ingressTls},
+			}
+
 			ingress.Spec = ingressSpec
-			ingress.APIVersion = "v1"
-			ingress.Kind = "Ingress"
-			ingress.Name = composeService.Name
-			ingress.Labels = labels
 			ingresses = append(ingresses, ingress)
 		}
 	}
