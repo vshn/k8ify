@@ -138,12 +138,18 @@ func composeServiceToDeployment(
 
 	templateSpec := core.PodTemplateSpec{
 		Spec: podSpec,
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: labels,
+		},
 	}
 
 	deploymentSpec := apps.DeploymentSpec{
 		Replicas: replicas,
 		Strategy: strategy,
 		Template: templateSpec,
+		Selector: &metav1.LabelSelector{
+			MatchLabels: labels,
+		},
 	}
 
 	deployment := apps.Deployment{}
