@@ -14,14 +14,23 @@ import (
 )
 
 var (
-	outputDir   = "manifests"
-	env         = "prod"
-	configFiles = [4]string{"compose.yml", "docker-compose.yml", "compose-" + env + ".yml", "docker-compose-" + env + ".yml"}
+	hardcodedConfig = internal.Config{
+		OutputDir: "manifests",
+		Env:       "prod",
+		IngressPatch: converter.IngressPatch{
+			AddAnnotations: map[string]string{"cert-manager.io/cluster-issuer": "letsencrypt-production"},
+		},
+	}
 )
 
 func main() {
+	config := hardcodedConfig
+	if config.ConfigFiles == nil || len(config.ConfigFiles) == 0 {
+		config.ConfigFiles = []string{"compose.yml", "docker-compose.yml", "compose-" + config.Env + ".yml", "docker-compose-" + config.Env + ".yml"}
+	}
+
 	composeConfigFiles := []composeTypes.ConfigFile{}
-	for _, configFile := range configFiles {
+	for _, configFile := range config.ConfigFiles {
 		if _, err := os.Stat(configFile); err == nil {
 			composeConfigFiles = append(composeConfigFiles, composeTypes.ConfigFile{
 				Filename: configFile,
@@ -52,7 +61,9 @@ func main() {
 		ingresses = append(ingresses, serviceIngresses...)
 	}
 
-	err = internal.WriteManifests(outputDir, deployments, services, persistentVolumeClaims, secrets, ingresses)
+	converter.PatchIngresses(ingresses, config.IngressPatch)
+
+	err = internal.WriteManifests(config.OutputDir, deployments, services, persistentVolumeClaims, secrets, ingresses)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
