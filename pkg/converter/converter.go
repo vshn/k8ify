@@ -189,7 +189,7 @@ func composeServiceToIngress(composeService composeTypes.ServiceConfig, service 
 
 		if host, ok := ingressConfig["host"]; ok {
 			ingress := networking.Ingress{}
-			ingress.APIVersion = "v1"
+			ingress.APIVersion = "networking.k8s.io/v1"
 			ingress.Kind = "Ingress"
 			ingress.Name = fmt.Sprintf("%s-%d", composeService.Name, service.Spec.Ports[i].Port)
 			ingress.Labels = labels
