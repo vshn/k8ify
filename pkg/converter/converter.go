@@ -112,9 +112,15 @@ func composeServiceToDeployment(
 	strategy := apps.DeploymentStrategy{}
 	strategy.Type = apps.RecreateDeploymentStrategyType
 
+	deployment := apps.Deployment{}
+	deployment.APIVersion = "apps/v1"
+	deployment.Kind = "Deployment"
+	deployment.Name = composeService.Name + sub
+	deployment.Labels = labels
+
 	container := core.Container{
 		Image:        composeService.Image,
-		Name:         composeService.Name,
+		Name:         deployment.Name,
 		Ports:        containerPorts,
 		VolumeMounts: volumeMounts,
 		// We COULD put the environment variables here, but because some of them likely contain sensitive data they are stored in a secret instead
@@ -152,13 +158,7 @@ func composeServiceToDeployment(
 			MatchLabels: labels,
 		},
 	}
-
-	deployment := apps.Deployment{}
 	deployment.Spec = deploymentSpec
-	deployment.APIVersion = "apps/v1"
-	deployment.Kind = "Deployment"
-	deployment.Name = composeService.Name + sub
-	deployment.Labels = labels
 
 	return deployment
 }
