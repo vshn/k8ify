@@ -16,7 +16,8 @@ import (
 var (
 	hardcodedConfig = internal.Config{
 		OutputDir: "manifests",
-		Env:       "prod",
+		Env:       "test",
+		Ref:       "",
 		IngressPatch: converter.IngressPatch{
 			AddAnnotations: map[string]string{"cert-manager.io/cluster-issuer": "letsencrypt-production"},
 		},
@@ -25,6 +26,14 @@ var (
 
 func main() {
 	config := hardcodedConfig
+
+	if len(os.Args) > 1 {
+		config.Env = os.Args[1]
+	}
+	if len(os.Args) > 2 {
+		config.Ref = os.Args[2]
+	}
+
 	if config.ConfigFiles == nil || len(config.ConfigFiles) == 0 {
 		config.ConfigFiles = []string{"compose.yml", "docker-compose.yml", "compose-" + config.Env + ".yml", "docker-compose-" + config.Env + ".yml"}
 	}
@@ -53,7 +62,7 @@ func main() {
 	secrets := []core.Secret{}
 	ingresses := []networking.Ingress{}
 	for _, composeService := range project.Services {
-		deployment, service, servicePersistentVolumeClaims, secret, serviceIngresses := converter.ComposeServiceToK8s(composeService)
+		deployment, service, servicePersistentVolumeClaims, secret, serviceIngresses := converter.ComposeServiceToK8s(config.Ref, composeService)
 		deployments = append(deployments, deployment)
 		services = append(services, service)
 		persistentVolumeClaims = append(persistentVolumeClaims, servicePersistentVolumeClaims...)

@@ -10,3 +10,6 @@ services:
       - mongodb_username=portal
       - mongodb_password=$prod_mongodb_password
       - mongodb_disable_tls=true
+  mongo:
+    labels:
+      k8ify.singleton: true
