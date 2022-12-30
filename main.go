@@ -14,19 +14,16 @@ import (
 )
 
 var (
-	hardcodedConfig = internal.Config{
-		OutputDir: "manifests",
-		Env:       "test",
-		Ref:       "",
-		IngressPatch: converter.IngressPatch{
-			AddAnnotations: map[string]string{"cert-manager.io/cluster-issuer": "letsencrypt-production"},
-		},
+	defaultConfig = internal.Config{
+		OutputDir:    "manifests",
+		Env:          "dev",
+		Ref:          "",
+		IngressPatch: converter.IngressPatch{},
 	}
 )
 
 func main() {
-	config := hardcodedConfig
-
+	config := internal.ConfigMerge(defaultConfig, internal.ReadConfig(".k8ify.defaults.yaml"), internal.ReadConfig(".k8ify.local.yaml"))
 	if len(os.Args) > 1 {
 		config.Env = os.Args[1]
 	}
