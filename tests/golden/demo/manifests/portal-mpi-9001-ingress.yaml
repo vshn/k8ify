@@ -1,0 +1,28 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+  creationTimestamp: null
+  labels:
+    k8ify.service: portal-mpi
+  name: portal-mpi-9001
+spec:
+  rules:
+  - host: portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud
+    http:
+      paths:
+      - backend:
+          service:
+            name: portal
+            port:
+              number: 9001
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud
+    secretName: portal-mpi-9001-tls
+status:
+  loadBalancer: {}

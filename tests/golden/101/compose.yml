@@ -1,0 +1,5 @@
+services:
+  nginx:
+    image: docker.io/library/nginx
+    ports:
+      - '8080:80'

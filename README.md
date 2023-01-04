@@ -83,6 +83,38 @@ A resulting deployment might look like this:
 _Details about the conversion process will be documented here once we have a first somewhat stable implementation._
 
 
+## Testing
+
+In order to validate that `k8ify` does what we expect it to do, we use the concept of "golden tests": a predefined set of inputs (compose files) and outputs (Kubernetes manifests) are added to the repository. During the testing process, we run `k8ify` against each of the inputs, and verify that the outputs match the expected outputs.
+
+To set up a golden test named `$NAME`, you need to create two things in the `tests/golden/` directory:
+
+1. A file called `$NAME.yml`, and
+2. A directory called `$NAME` containing compose files.
+
+The structure of the YAML file should look like this:
+
+```yaml
+environments:
+  prod: {}
+  test:
+    refs:
+      - foo
+      - bar
+    vars:
+      SOME_ENV_VAR: "true"
+      ANOTHER_ENV_VAR: "42"
+```
+
+Note that both the `refs` and `vars` fields are optional, but allow you to control the tests:
+
+- `refs` will make the test run `k8ify` for each of the provided values. If no `refs` is defined, `k8ify` will be run once for this environment with an empty `ref` value.
+- `vars` can contain environment variables that are ADDED to the ones that are already set within the testing environment. If your compoose file makes use of any environment variables, make sure to add them here for reproducability.
+
+
+To actually run the tests, run `go test` in the root of the repository.
+
+
 ## License
 
 This project is licensed under the [BSD 3-Clause License](LICENSE)
