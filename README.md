@@ -1,6 +1,6 @@
 # k8ify
 
-`k8ify` converts [**Compose**][] files into Kubernetes manifests.
+`k8ify` converts [**Compose**][Compose] files into **Kubernetes** manifests.
 
 **Warning:** This tool is currently under heavy development. Stuff may change & break between releases!
 
