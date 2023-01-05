@@ -111,7 +111,6 @@ Note that both the `refs` and `vars` fields are optional, but allow you to contr
 - `refs` will make the test run `k8ify` for each of the provided values. If no `refs` is defined, `k8ify` will be run once for this environment with an empty `ref` value.
 - `vars` can contain environment variables that are ADDED to the ones that are already set within the testing environment. If your compoose file makes use of any environment variables, make sure to add them here for reproducability.
 
-
 To actually run the tests, run `go test` in the root of the repository.
 
 
