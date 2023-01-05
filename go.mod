@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/compose-spec/compose-go v1.8.1
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/cli-runtime v0.26.0

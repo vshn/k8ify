@@ -1,6 +1,9 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	composeLoader "github.com/compose-spec/compose-go/loader"
 	composeTypes "github.com/compose-spec/compose-go/types"
 	"github.com/vshn/k8ify/internal"
@@ -9,8 +12,6 @@ import (
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	networking "k8s.io/api/networking/v1"
-	"log"
-	"os"
 )
 
 var (
@@ -23,12 +24,17 @@ var (
 )
 
 func main() {
+	code := Main(os.Args)
+	os.Exit(code)
+}
+
+func Main(args []string) int {
 	config := internal.ConfigMerge(defaultConfig, internal.ReadConfig(".k8ify.defaults.yaml"), internal.ReadConfig(".k8ify.local.yaml"))
-	if len(os.Args) > 1 {
-		config.Env = os.Args[1]
+	if len(args) > 1 {
+		config.Env = args[1]
 	}
-	if len(os.Args) > 2 {
-		config.Ref = os.Args[2]
+	if len(args) > 2 {
+		config.Ref = args[2]
 	}
 
 	if config.ConfigFiles == nil || len(config.ConfigFiles) == 0 {
@@ -49,8 +55,8 @@ func main() {
 	}
 	project, err := composeLoader.Load(configDetails)
 	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
+		log.Println(err)
+		return 1
 	}
 
 	deployments := []apps.Deployment{}
@@ -71,9 +77,9 @@ func main() {
 
 	err = internal.WriteManifests(config.OutputDir, deployments, services, persistentVolumeClaims, secrets, ingresses)
 	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
+		log.Println(err)
+		return 1
 	}
 
-	os.Exit(0)
+	return 0
 }
