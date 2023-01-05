@@ -2,6 +2,9 @@ package converter
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	composeTypes "github.com/compose-spec/compose-go/types"
 	"github.com/vshn/k8ify/pkg/util"
 	apps "k8s.io/api/apps/v1"
@@ -10,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"strconv"
-	"strings"
 )
 
 func composeServiceStorageToK8s() map[core.ResourceName]resource.Quantity {
@@ -127,7 +128,7 @@ func composeServiceToDeployment(
 		// Env:          envVars,
 		// Reference the secret:
 		EnvFrom: []core.EnvFromSource{
-			core.EnvFromSource{
+			{
 				SecretRef: &core.SecretEnvSource{
 					LocalObjectReference: core.LocalObjectReference{
 						Name: secretName,
