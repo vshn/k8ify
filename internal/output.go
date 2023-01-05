@@ -1,15 +1,15 @@
 package internal
 
 import (
-	"io/ioutil"
+	"log"
+	"os"
+	"strings"
+
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	networking "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/printers"
-	"log"
-	"os"
-	"strings"
 )
 
 func prepareOutputDir(outputDir string) error {
@@ -18,7 +18,7 @@ func prepareOutputDir(outputDir string) error {
 		return err
 	}
 
-	files, err := ioutil.ReadDir(outputDir)
+	files, err := os.ReadDir(outputDir)
 	if err != nil {
 		return err
 	}

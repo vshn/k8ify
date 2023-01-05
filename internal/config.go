@@ -1,8 +1,9 @@
 package internal
 
 import (
+	"os"
+
 	"github.com/vshn/k8ify/pkg/converter"
-	"io/ioutil"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -15,17 +16,17 @@ type Config struct {
 }
 
 func ReadConfig(fileName string) Config {
-	buf, err := ioutil.ReadFile(fileName)
+	buf, err := os.ReadFile(fileName)
 	if err != nil {
 		return Config{}
 	}
 
-	config := &Config{}
-	yaml.Unmarshal(buf, config)
-	if err != nil {
+	config := Config{}
+	if err := yaml.Unmarshal(buf, &config); err != nil {
 		return Config{}
 	}
-	return *config
+
+	return config
 }
 
 func ConfigMerge(configs ...Config) Config {
