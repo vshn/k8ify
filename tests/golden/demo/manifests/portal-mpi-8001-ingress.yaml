@@ -6,7 +6,8 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-production
   creationTimestamp: null
   labels:
-    k8ify.service: portal-mpi
+    k8ify.ref-slug: mpi
+    k8ify.service: portal
   name: portal-mpi-8001
 spec:
   rules:
