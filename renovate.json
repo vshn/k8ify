@@ -12,6 +12,9 @@
     "enabled": true,
     "automerge": true
   },
+  "postUpdateOptions" [
+    "gomodTidy"
+  ],
   "packageRules": [{
     "matchUpdateTypes": ["patch"],
     "matchCurrentVersion": "!/^0/",
