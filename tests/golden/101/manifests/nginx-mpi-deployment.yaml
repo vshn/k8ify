@@ -3,20 +3,23 @@ kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
-    k8ify.service: nginx-mpi
+    k8ify.ref-slug: mpi
+    k8ify.service: nginx
   name: nginx-mpi
 spec:
   replicas: 1
   selector:
     matchLabels:
-      k8ify.service: nginx-mpi
+      k8ify.ref-slug: mpi
+      k8ify.service: nginx
   strategy:
     type: Recreate
   template:
     metadata:
       creationTimestamp: null
       labels:
-        k8ify.service: nginx-mpi
+        k8ify.ref-slug: mpi
+        k8ify.service: nginx
     spec:
       containers:
       - envFrom:

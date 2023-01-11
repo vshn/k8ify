@@ -4,7 +4,8 @@ kind: PersistentVolumeClaim
 metadata:
   creationTimestamp: null
   labels:
-    k8ify.service: portal-mpi
+    k8ify.ref-slug: mpi
+    k8ify.service: portal
   name: portal-mpi-claim0
 spec:
   accessModes:

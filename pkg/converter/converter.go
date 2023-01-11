@@ -84,7 +84,7 @@ func composeServicePortsToK8s(composeServicePorts []composeTypes.ServicePortConf
 	return containerPorts, servicePorts
 }
 
-func composeServiceToSecret(sub string, composeService composeTypes.ServiceConfig, labels map[string]string) core.Secret {
+func composeServiceToSecret(refSlug string, composeService composeTypes.ServiceConfig, labels map[string]string) core.Secret {
 	stringData := make(map[string]string)
 	for key, value := range composeService.Environment {
 		stringData[key] = *value
@@ -92,14 +92,14 @@ func composeServiceToSecret(sub string, composeService composeTypes.ServiceConfi
 	secret := core.Secret{}
 	secret.APIVersion = "v1"
 	secret.Kind = "Secret"
-	secret.Name = composeService.Name + sub + "-env"
+	secret.Name = composeService.Name + refSlug + "-env"
 	secret.Labels = labels
 	secret.StringData = stringData
 	return secret
 }
 
 func composeServiceToDeployment(
-	sub string,
+	refSlug string,
 	composeService composeTypes.ServiceConfig,
 	containerPorts []core.ContainerPort,
 	volumes []core.Volume,
@@ -116,7 +116,7 @@ func composeServiceToDeployment(
 	deployment := apps.Deployment{}
 	deployment.APIVersion = "apps/v1"
 	deployment.Kind = "Deployment"
-	deployment.Name = composeService.Name + sub
+	deployment.Name = composeService.Name + refSlug
 	deployment.Labels = labels
 
 	container := core.Container{
@@ -164,7 +164,7 @@ func composeServiceToDeployment(
 	return deployment
 }
 
-func composeServiceToService(sub string, composeService composeTypes.ServiceConfig, servicePorts []core.ServicePort, labels map[string]string) core.Service {
+func composeServiceToService(refSlug string, composeService composeTypes.ServiceConfig, servicePorts []core.ServicePort, labels map[string]string) core.Service {
 	serviceSpec := core.ServiceSpec{
 		Ports:    servicePorts,
 		Selector: labels,
@@ -173,12 +173,12 @@ func composeServiceToService(sub string, composeService composeTypes.ServiceConf
 	service.Spec = serviceSpec
 	service.APIVersion = "v1"
 	service.Kind = "Service"
-	service.Name = composeService.Name + sub
+	service.Name = composeService.Name + refSlug
 	service.Labels = labels
 	return service
 }
 
-func composeServiceToIngress(sub string, composeService composeTypes.ServiceConfig, service core.Service, labels map[string]string) []networking.Ingress {
+func composeServiceToIngress(refSlug string, composeService composeTypes.ServiceConfig, service core.Service, labels map[string]string) []networking.Ingress {
 	ingresses := []networking.Ingress{}
 	for i, port := range service.Spec.Ports {
 		// we expect the config to be in "k8ify.expose.PORT"
@@ -193,7 +193,7 @@ func composeServiceToIngress(sub string, composeService composeTypes.ServiceConf
 			ingress := networking.Ingress{}
 			ingress.APIVersion = "networking.k8s.io/v1"
 			ingress.Kind = "Ingress"
-			ingress.Name = fmt.Sprintf("%s%s-%d", composeService.Name, sub, service.Spec.Ports[i].Port)
+			ingress.Name = fmt.Sprintf("%s%s-%d", composeService.Name, refSlug, service.Spec.Ports[i].Port)
 			ingress.Labels = labels
 
 			serviceBackendPort := networking.ServiceBackendPort{
@@ -246,7 +246,7 @@ func composeServiceToIngress(sub string, composeService composeTypes.ServiceConf
 	return ingresses
 }
 
-func subName(ref string, composeService composeTypes.ServiceConfig) string {
+func toRefSlug(ref string, composeService composeTypes.ServiceConfig) string {
 	if ref == "" {
 		return ""
 	}
@@ -255,20 +255,24 @@ func subName(ref string, composeService composeTypes.ServiceConfig) string {
 			return ""
 		}
 	}
-	return "-" + ref
+	return ref
 }
 
 func ComposeServiceToK8s(ref string, composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim, core.Secret, []networking.Ingress) {
-	sub := subName(util.SanitizeWithMinLength(ref, 3), composeService)
+	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 3), composeService)
 	labels := make(map[string]string)
-	labels["k8ify.service"] = composeService.Name + sub
+	labels["k8ify.service"] = composeService.Name
+	if refSlug != "" {
+		labels["k8ify.ref-slug"] = refSlug
+		refSlug = "-" + refSlug
+	}
 
-	volumes, volumeMounts, persistentVolumeClaims := composeServiceVolumesToK8s(composeService.Name+sub, composeService.Volumes, labels)
+	volumes, volumeMounts, persistentVolumeClaims := composeServiceVolumesToK8s(composeService.Name+refSlug, composeService.Volumes, labels)
 	containerPorts, servicePorts := composeServicePortsToK8s(composeService.Ports)
-	secret := composeServiceToSecret(sub, composeService, labels)
-	deployment := composeServiceToDeployment(sub, composeService, containerPorts, volumes, volumeMounts, secret.Name, labels)
-	service := composeServiceToService(sub, composeService, servicePorts, labels)
-	ingresses := composeServiceToIngress(sub, composeService, service, labels)
+	secret := composeServiceToSecret(refSlug, composeService, labels)
+	deployment := composeServiceToDeployment(refSlug, composeService, containerPorts, volumes, volumeMounts, secret.Name, labels)
+	service := composeServiceToService(refSlug, composeService, servicePorts, labels)
+	ingresses := composeServiceToIngress(refSlug, composeService, service, labels)
 
 	return deployment, service, persistentVolumeClaims, secret, ingresses
 }
