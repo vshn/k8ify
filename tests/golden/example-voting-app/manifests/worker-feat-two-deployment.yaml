@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: feat-two
+    k8ify.service: worker
+  name: worker-feat-two
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8ify.ref-slug: feat-two
+      k8ify.service: worker
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: feat-two
+        k8ify.service: worker
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: worker-feat-two-env
+        image: docker.io/dockersamples/examplevotingapp_worker
+        name: worker-feat-two
+        resources: {}
+      restartPolicy: Always
+status: {}

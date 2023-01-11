@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: feat-two
+    k8ify.service: vote
+  name: vote-feat-two
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8ify.ref-slug: feat-two
+      k8ify.service: vote
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: feat-two
+        k8ify.service: vote
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: vote-feat-two-env
+        image: docker.io/dockersamples/examplevotingapp_vote
+        name: vote-feat-two
+        ports:
+        - containerPort: 80
+        resources: {}
+      restartPolicy: Always
+status: {}
