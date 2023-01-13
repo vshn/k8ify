@@ -76,6 +76,7 @@ A resulting deployment might look like this:
 | `k8ify.singleton: true`  | Compose service is only deployed once per environment instead of once per `$ref` per environment  |
 | `k8ify.expose: $host`  | The first port is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
 | `k8ify.expose.$port: $host`  | The port `$port` is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
+| `k8ify.share-storage: true` | Instead of using a StatefulSet when volumes are detected, use a Deployment that shares the volume between instances. |
 
 
 ## Conversion

@@ -5,9 +5,7 @@ import (
 	"os"
 	"strings"
 
-	apps "k8s.io/api/apps/v1"
-	core "k8s.io/api/core/v1"
-	networking "k8s.io/api/networking/v1"
+	"github.com/vshn/k8ify/pkg/converter"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/printers"
 )
@@ -50,7 +48,7 @@ func writeManifest(yp *printers.YAMLPrinter, obj runtime.Object, destination str
 	return nil
 }
 
-func WriteManifests(outputDir string, deployments []apps.Deployment, services []core.Service, persistentVolumeClaims []core.PersistentVolumeClaim, secrets []core.Secret, ingresses []networking.Ingress) error {
+func WriteManifests(outputDir string, objects converter.Objects) error {
 	err := prepareOutputDir(outputDir)
 	if err != nil {
 		log.Fatal(err)
@@ -59,45 +57,53 @@ func WriteManifests(outputDir string, deployments []apps.Deployment, services []
 
 	yp := printers.YAMLPrinter{}
 
-	for _, deployment := range deployments {
+	for _, deployment := range objects.Deployments {
 		err := writeManifest(&yp, &deployment, outputDir+"/"+deployment.Name+"-deployment.yaml")
 		if err != nil {
 			return err
 		}
 	}
-	log.Printf("wrote %d deployments\n", len(deployments))
+	log.Printf("wrote %d deployments\n", len(objects.Deployments))
 
-	for _, service := range services {
+	for _, statefulset := range objects.StatefulSets {
+		err := writeManifest(&yp, &statefulset, outputDir+"/"+statefulset.Name+"-statefulset.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	log.Printf("wrote %d statefulsets\n", len(objects.StatefulSets))
+
+	for _, service := range objects.Services {
 		err := writeManifest(&yp, &service, outputDir+"/"+service.Name+"-service.yaml")
 		if err != nil {
 			return err
 		}
 	}
-	log.Printf("wrote %d services\n", len(services))
+	log.Printf("wrote %d services\n", len(objects.Services))
 
-	for _, persistentVolumeClaim := range persistentVolumeClaims {
+	for _, persistentVolumeClaim := range objects.PersistentVolumeClaims {
 		err := writeManifest(&yp, &persistentVolumeClaim, outputDir+"/"+persistentVolumeClaim.Name+"-persistentvolumeclaim.yaml")
 		if err != nil {
 			return err
 		}
 	}
-	log.Printf("wrote %d persistentVolumeClaims\n", len(persistentVolumeClaims))
+	log.Printf("wrote %d persistentVolumeClaims\n", len(objects.PersistentVolumeClaims))
 
-	for _, secret := range secrets {
+	for _, secret := range objects.Secrets {
 		err := writeManifest(&yp, &secret, outputDir+"/"+secret.Name+"-secret.yaml")
 		if err != nil {
 			return err
 		}
 	}
-	log.Printf("wrote %d secrets\n", len(secrets))
+	log.Printf("wrote %d secrets\n", len(objects.Secrets))
 
-	for _, ingress := range ingresses {
+	for _, ingress := range objects.Ingresses {
 		err := writeManifest(&yp, &ingress, outputDir+"/"+ingress.Name+"-ingress.yaml")
 		if err != nil {
 			return err
 		}
 	}
-	log.Printf("wrote %d ingresses\n", len(ingresses))
+	log.Printf("wrote %d ingresses\n", len(objects.Ingresses))
 
 	return nil
 }

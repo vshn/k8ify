@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 )
 
 func composeServiceStorageToK8s() map[core.ResourceName]resource.Quantity {
@@ -21,7 +22,13 @@ func composeServiceStorageToK8s() map[core.ResourceName]resource.Quantity {
 	return quantity
 }
 
-func composeServiceVolumesToK8s(serviceName string, serviceVolumes []composeTypes.ServiceVolumeConfig, labels map[string]string) ([]core.Volume, []core.VolumeMount, []core.PersistentVolumeClaim) {
+func composeServiceVolumesToK8s(
+	serviceName string,
+	serviceVolumes []composeTypes.ServiceVolumeConfig,
+	labels map[string]string,
+	accessMode core.PersistentVolumeAccessMode,
+) ([]core.Volume, []core.VolumeMount, []core.PersistentVolumeClaim) {
+
 	volumeMounts := []core.VolumeMount{}
 	volumes := []core.Volume{}
 	persistentVolumeClaims := []core.PersistentVolumeClaim{}
@@ -52,7 +59,7 @@ func composeServiceVolumesToK8s(serviceName string, serviceVolumes []composeType
 				Labels: labels,
 			},
 			Spec: core.PersistentVolumeClaimSpec{
-				AccessModes: []core.PersistentVolumeAccessMode{core.ReadWriteOnce},
+				AccessModes: []core.PersistentVolumeAccessMode{accessMode},
 				Resources: core.ResourceRequirements{
 					Requests: composeServiceStorageToK8s(),
 				},
@@ -105,10 +112,8 @@ func composeServiceToDeployment(
 	volumes []core.Volume,
 	volumeMounts []core.VolumeMount,
 	secretName string,
-	labels map[string]string) apps.Deployment {
-
-	replicas := new(int32)
-	*replicas = 1
+	labels map[string]string,
+) apps.Deployment {
 
 	strategy := apps.DeploymentStrategy{}
 	strategy.Type = apps.RecreateDeploymentStrategyType
@@ -119,11 +124,80 @@ func composeServiceToDeployment(
 	deployment.Name = composeService.Name + refSlug
 	deployment.Labels = labels
 
+	templateSpec := composeServiceToPodTemplate(
+		deployment.Name,
+		composeService.Image,
+		secretName,
+		containerPorts,
+		volumes,
+		volumeMounts,
+		labels,
+	)
+
+	deployment.Spec = apps.DeploymentSpec{
+		Replicas: pointer.Int32(1),
+		Strategy: strategy,
+		Template: templateSpec,
+		Selector: &metav1.LabelSelector{
+			MatchLabels: labels,
+		},
+	}
+
+	return deployment
+}
+
+func composeServiceToStatefulSet(
+	refSlug string,
+	composeService composeTypes.ServiceConfig,
+	containerPorts []core.ContainerPort,
+	volumes []core.Volume,
+	volumeMounts []core.VolumeMount,
+	volumeClaims []core.PersistentVolumeClaim,
+	secretName string,
+	labels map[string]string,
+) apps.StatefulSet {
+
+	statefulset := apps.StatefulSet{}
+	statefulset.APIVersion = "apps/v1"
+	statefulset.Kind = "StatefulSet"
+	statefulset.Name = composeService.Name + refSlug
+	statefulset.Labels = labels
+
+	templateSpec := composeServiceToPodTemplate(
+		statefulset.Name,
+		composeService.Image,
+		secretName,
+		containerPorts,
+		volumes,
+		volumeMounts,
+		labels,
+	)
+
+	statefulset.Spec = apps.StatefulSetSpec{
+		Replicas: pointer.Int32(1),
+		Template: templateSpec,
+		Selector: &metav1.LabelSelector{
+			MatchLabels: labels,
+		},
+		VolumeClaimTemplates: volumeClaims,
+	}
+
+	return statefulset
+}
+
+func composeServiceToPodTemplate(
+	name string,
+	image string,
+	secretName string,
+	ports []core.ContainerPort,
+	volumes []core.Volume,
+	volumeMounts []core.VolumeMount,
+	labels map[string]string) core.PodTemplateSpec {
+
 	container := core.Container{
-		Image:        composeService.Image,
-		Name:         deployment.Name,
-		Ports:        containerPorts,
-		VolumeMounts: volumeMounts,
+		Name:  name,
+		Image: image,
+		Ports: ports,
 		// We COULD put the environment variables here, but because some of them likely contain sensitive data they are stored in a secret instead
 		// Env:          envVars,
 		// Reference the secret:
@@ -136,32 +210,21 @@ func composeServiceToDeployment(
 				},
 			},
 		},
+		VolumeMounts: volumeMounts,
 	}
 
 	podSpec := core.PodSpec{
 		Containers:    []core.Container{container},
-		Volumes:       volumes,
 		RestartPolicy: core.RestartPolicyAlways,
+		Volumes:       volumes,
 	}
 
-	templateSpec := core.PodTemplateSpec{
+	return core.PodTemplateSpec{
 		Spec: podSpec,
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
 		},
 	}
-
-	deploymentSpec := apps.DeploymentSpec{
-		Replicas: replicas,
-		Strategy: strategy,
-		Template: templateSpec,
-		Selector: &metav1.LabelSelector{
-			MatchLabels: labels,
-		},
-	}
-	deployment.Spec = deploymentSpec
-
-	return deployment
 }
 
 func composeServiceToService(refSlug string, composeService composeTypes.ServiceConfig, servicePorts []core.ServicePort, labels map[string]string) core.Service {
@@ -251,14 +314,14 @@ func toRefSlug(ref string, composeService composeTypes.ServiceConfig) string {
 		return ""
 	}
 	if singleton, ok := composeService.Labels["k8ify.singleton"]; ok {
-		if singleton == "true" {
+		if util.IsTruthy(singleton) {
 			return ""
 		}
 	}
 	return ref
 }
 
-func ComposeServiceToK8s(ref string, composeService composeTypes.ServiceConfig) (apps.Deployment, core.Service, []core.PersistentVolumeClaim, core.Secret, []networking.Ingress) {
+func ComposeServiceToK8s(ref string, composeService composeTypes.ServiceConfig) Objects {
 	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 3), composeService)
 	labels := make(map[string]string)
 	labels["k8ify.service"] = composeService.Name
@@ -267,12 +330,76 @@ func ComposeServiceToK8s(ref string, composeService composeTypes.ServiceConfig) 
 		refSlug = "-" + refSlug
 	}
 
-	volumes, volumeMounts, persistentVolumeClaims := composeServiceVolumesToK8s(composeService.Name+refSlug, composeService.Volumes, labels)
-	containerPorts, servicePorts := composeServicePortsToK8s(composeService.Ports)
-	secret := composeServiceToSecret(refSlug, composeService, labels)
-	deployment := composeServiceToDeployment(refSlug, composeService, containerPorts, volumes, volumeMounts, secret.Name, labels)
-	service := composeServiceToService(refSlug, composeService, servicePorts, labels)
-	ingresses := composeServiceToIngress(refSlug, composeService, service, labels)
+	objects := Objects{}
 
-	return deployment, service, persistentVolumeClaims, secret, ingresses
+	secret := composeServiceToSecret(refSlug, composeService, labels)
+	objects.Secrets = []core.Secret{secret}
+
+	containerPorts, servicePorts := composeServicePortsToK8s(composeService.Ports)
+	service := composeServiceToService(refSlug, composeService, servicePorts, labels)
+	objects.Services = []core.Service{service}
+
+	shareStorage := util.IsTruthy(composeService.Labels["k8ify.share-storage"])
+	accessMode := core.ReadWriteOnce
+	if shareStorage {
+		accessMode = core.ReadWriteMany
+	}
+	volumes, volumeMounts, persistentVolumeClaims := composeServiceVolumesToK8s(
+		composeService.Name+refSlug, composeService.Volumes, labels, accessMode,
+	)
+
+	if shareStorage || len(volumeMounts) < 1 {
+		objects.PersistentVolumeClaims = persistentVolumeClaims
+		deployment := composeServiceToDeployment(refSlug,
+			composeService,
+			containerPorts,
+			volumes,
+			volumeMounts,
+			secret.Name,
+			labels,
+		)
+		objects.Deployments = []apps.Deployment{deployment}
+
+	} else {
+		// StatefulSets create their own PVC's via `spec.volumeTemplate`, so we don't include the PVC objects here
+		statefulset := composeServiceToStatefulSet(
+			refSlug,
+			composeService,
+			containerPorts,
+			volumes,
+			volumeMounts,
+			persistentVolumeClaims,
+			secret.Name,
+			labels,
+		)
+		objects.StatefulSets = []apps.StatefulSet{statefulset}
+
+	}
+
+	ingresses := composeServiceToIngress(refSlug, composeService, service, labels)
+	objects.Ingresses = ingresses
+
+	return objects
+}
+
+// Objects combines all possible resources the conversion process could produce
+type Objects struct {
+	// Deployments
+	Deployments            []apps.Deployment
+	StatefulSets           []apps.StatefulSet
+	Services               []core.Service
+	PersistentVolumeClaims []core.PersistentVolumeClaim
+	Secrets                []core.Secret
+	Ingresses              []networking.Ingress
+}
+
+func (o Objects) Append(other Objects) Objects {
+	return Objects{
+		Deployments:            append(o.Deployments, other.Deployments...),
+		StatefulSets:           append(o.StatefulSets, other.StatefulSets...),
+		Services:               append(o.Services, other.Services...),
+		PersistentVolumeClaims: append(o.PersistentVolumeClaims, other.PersistentVolumeClaims...),
+		Secrets:                append(o.Secrets, other.Secrets...),
+		Ingresses:              append(o.Ingresses, other.Ingresses...),
+	}
 }

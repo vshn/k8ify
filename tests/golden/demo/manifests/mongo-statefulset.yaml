@@ -1,5 +1,6 @@
+---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   creationTimestamp: null
   labels:
@@ -10,8 +11,7 @@ spec:
   selector:
     matchLabels:
       k8ify.service: mongo
-  strategy:
-    type: Recreate
+  serviceName: ""
   template:
     metadata:
       creationTimestamp: null
@@ -35,4 +35,22 @@ spec:
       - name: mongodb-data
         persistentVolumeClaim:
           claimName: mongodb-data
-status: {}
+  updateStrategy: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.service: mongo
+      name: mongodb-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+status:
+  availableReplicas: 0
+  replicas: 0
