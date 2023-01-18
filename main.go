@@ -9,9 +9,6 @@ import (
 	"github.com/vshn/k8ify/internal"
 	"github.com/vshn/k8ify/pkg/converter"
 	"github.com/vshn/k8ify/pkg/util"
-	apps "k8s.io/api/apps/v1"
-	core "k8s.io/api/core/v1"
-	networking "k8s.io/api/networking/v1"
 )
 
 var (
@@ -59,23 +56,15 @@ func Main(args []string) int {
 		return 1
 	}
 
-	deployments := []apps.Deployment{}
-	services := []core.Service{}
-	persistentVolumeClaims := []core.PersistentVolumeClaim{}
-	secrets := []core.Secret{}
-	ingresses := []networking.Ingress{}
+	objects := converter.Objects{}
+
 	for _, composeService := range project.Services {
-		deployment, service, servicePersistentVolumeClaims, secret, serviceIngresses := converter.ComposeServiceToK8s(config.Ref, composeService)
-		deployments = append(deployments, deployment)
-		services = append(services, service)
-		persistentVolumeClaims = append(persistentVolumeClaims, servicePersistentVolumeClaims...)
-		secrets = append(secrets, secret)
-		ingresses = append(ingresses, serviceIngresses...)
+		objects = objects.Append(converter.ComposeServiceToK8s(config.Ref, composeService))
 	}
 
-	converter.PatchIngresses(ingresses, config.IngressPatch)
+	converter.PatchIngresses(objects.Ingresses, config.IngressPatch)
 
-	err = internal.WriteManifests(config.OutputDir, deployments, services, persistentVolumeClaims, secrets, ingresses)
+	err = internal.WriteManifests(config.OutputDir, objects)
 	if err != nil {
 		log.Println(err)
 		return 1

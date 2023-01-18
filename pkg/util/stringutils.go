@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+var (
+	reTrue = regexp.MustCompile("(?i)^true|yes|1$")
+)
+
 func Sanitize(str string) string {
 	str = strings.ToLower(str)
 	// replace all non-alphanumeric characters by "-"
@@ -54,4 +58,8 @@ func SubConfig(config map[string]string, prefix string, defaultKey string) map[s
 		}
 	}
 	return subConfig
+}
+
+func IsTruthy(s string) bool {
+	return reTrue.MatchString(s)
 }
