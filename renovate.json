@@ -19,5 +19,8 @@
     "matchUpdateTypes": ["patch"],
     "matchCurrentVersion": "!/^0/",
     "automerge": true
+  }, {
+    "matchUpdateTypes": ["digest"],
+    "automerge": true
   }]
 }
