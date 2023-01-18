@@ -81,7 +81,7 @@ A resulting deployment might look like this:
 
 ## Conversion
 
-_Details about the conversion process will be documented here once we have a first somewhat stable implementation._
+The conversion process is documented in-depth in [Conversion](./docs/conversion.md).
 
 
 ## Testing
