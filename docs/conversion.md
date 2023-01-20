@@ -124,6 +124,34 @@ spec:
               name: myapp-claim0
             - mountPath: /data
               name: myapp_data
+          # By default both a livenessProbe and startupProbe are set up.
+          # `services.$name.labels["k8ify.liveness"]` and sub-labels
+          livenessProbe:
+            failureThreshold: 3
+            # `httpGet` if `services.$name.labels["k8ify.liveness"]` or `services.$name.labels["k8ify.liveness.path"]` is set, `tcpSocket` otherwise
+            httpGet:
+              # `services.$name.labels["k8ify.liveness"]` or `services.$name.labels["k8ify.liveness.path"]`
+              path: /health
+              # `services.$name.labels["k8ify.liveness.port"]` if it exists, otherwise first containerPort
+              port: 8000
+              # `services.$name.labels["k8ify.liveness.scheme"]`
+              scheme: HTTP
+            # `services.$name.labels["k8ify.liveness.periodSeconds"]`
+            periodSeconds: 30
+            # `services.$name.labels["k8ify.liveness.successThreshold"]`
+            successThreshold: 1
+            # `services.$name.labels["k8ify.liveness.timeoutSeconds"]`
+            timeoutSeconds: 60
+          # `services.$name.labels["k8ify.startup"]` and sub-labels
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /health
+              port: 8000
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 60
       # Values from `services.$name.volumes`, translated as the volumeMounts above
       volumes:
         - name: myapp-claim0
@@ -177,6 +205,34 @@ spec:
               name: myapp-claim0
             - mountPath: /data
               name: myapp_data
+          # By default both a livenessProbe and startupProbe are set up.
+          # `services.$name.labels["k8ify.liveness"]` and sub-labels
+          livenessProbe:
+            failureThreshold: 3
+            # `httpGet` if `services.$name.labels["k8ify.liveness"]` or `services.$name.labels["k8ify.liveness.path"]` is set, `tcpSocket` otherwise
+            httpGet:
+              # `services.$name.labels["k8ify.liveness"]` or `services.$name.labels["k8ify.liveness.path"]`
+              path: /health
+              # `services.$name.labels["k8ify.liveness.port"]` if it exists, otherwise first containerPort
+              port: 8000
+              # `services.$name.labels["k8ify.liveness.scheme"]`
+              scheme: HTTP
+            # `services.$name.labels["k8ify.liveness.periodSeconds"]`
+            periodSeconds: 30
+            # `services.$name.labels["k8ify.liveness.successThreshold"]`
+            successThreshold: 1
+            # `services.$name.labels["k8ify.liveness.timeoutSeconds"]`
+            timeoutSeconds: 60
+          # `services.$name.labels["k8ify.startup"]` and sub-labels
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /health
+              port: 8000
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 60
       # See PersistentVolumeClaim below for how the values are generated.
       volumeTemplates:
         - name: "myapp-claim0"
@@ -312,6 +368,7 @@ services:
   myapp:
     labels:
       k8ify.expose.8001: myapp.example.com
+      k8ify.liveness: /health
     image: docker.io/mycorp/myapp:v0.5.7
     deploy:
       replicas: 2

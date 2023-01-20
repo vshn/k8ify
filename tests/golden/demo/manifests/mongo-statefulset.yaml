@@ -22,10 +22,24 @@ spec:
         - secretRef:
             name: mongo-env
         image: mongo:4.0
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 27017
+          timeoutSeconds: 60
         name: mongo
         ports:
         - containerPort: 27017
         resources: {}
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 27017
+          timeoutSeconds: 60
         volumeMounts:
         - mountPath: /data/db
           name: mongodb-data

@@ -69,7 +69,9 @@ A resulting deployment might look like this:
 
 ### Labels
 
-`k8ify` supports configuring services by using compose labels.
+`k8ify` supports configuring services by using compose labels. All labels are optional.
+
+#### General
 
 | Label  | Effect  |
 | ------ | ------- |
@@ -77,6 +79,32 @@ A resulting deployment might look like this:
 | `k8ify.expose: $host`  | The first port is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
 | `k8ify.expose.$port: $host`  | The port `$port` is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
 | `k8ify.share-storage: true` | Instead of using a StatefulSet when volumes are detected, use a Deployment that shares the volume between instances. |
+
+#### Health Checks
+
+For each compose service k8ify will set up a basic TCP based health check (liveness and startup) by default.
+For all services providing HTTP endpoints you should provide at least a basic health check path and point `k8ify.liveness` to it.
+This replaces the TCP based health check by a more specific HTTP(S) check.
+
+| Label  | Effect  |
+| ------ | ------- |
+| `k8ify.liveness` | Configure a container liveness check. If the check fails the container will be restarted. |
+| `k8ify.liveness: $path` | Configure the path for a HTTP GET based liveness check. Default is "", which disables the HTTP GET check and uses a simple TCP connection check instead. |
+| `k8ify.liveness.path: $path` | See previous |
+| `k8ify.liveness.enabled: true` | Enable or disable the liveness check. Default is true. |
+| `k8ify.liveness.scheme: 'HTTP'` | Switch to HTTPS for HTTP GET based liveness check. Default is HTTP. |
+| `k8ify.liveness.periodSeconds: 30` | Configure the periodicity of the check. Default is 30. |
+| `k8ify.liveness.timeoutSeconds: 60` | Configure the timeout of the check. Default is 60. |
+| `k8ify.liveness.initialDelaySeconds: 0` | Delay before the first check is executed. Default is 0. |
+| `k8ify.liveness.successThreshold: 1` | Number of times the check needs to succeed in order to signal that everything is fine. Default is 1. |
+| `k8ify.liveness.failureThreshold: 3` | Number of times the check needs to fail in order to signal a failure. Default is 3. |
+| `k8ify.startup` | Configure a container startup check. This puts the liveness check on hold during container startup in order to prevent the liveness check from killing it. |
+| `k8ify.startup.*` | All the settings work the same as for `k8ify.liveness`. **The values are copied over from `k8ify.liveness` by default** with the following exceptions: |
+| `k8ify.startup.periodSeconds: 10` | In order to have quick startup the default is lowered to **10**. |
+| `k8ify.startup.failureThreshold: 30` | In order to give the application a total of 300 seconds to start up, the default is raised to **30**. |
+| `k8ify.readiness` | This check decides if traffic should be sent to this instance or not. In contrast to the liveness check a failing readiness check will not restart the pod, just mark it as unavailable and not send traffic to it. |
+| `k8ify.readiness.*` | All the sub-values work the same as for `k8ify.liveness` incl. defaults. No values are copied over. However the readiness check is disabled by default. |
+| `k8ify.readiness.enabled: false` | Enable or disable the readiness check. Default is false. |
 
 
 ## Conversion

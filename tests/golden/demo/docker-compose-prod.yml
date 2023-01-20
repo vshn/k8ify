@@ -8,6 +8,15 @@ services:
       k8ify.expose.8001: 'portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud'
       k8ify.expose.9001: 'portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud'
       k8ify.share-storage: true
+      k8ify.liveness.path: /health/alive
+      k8ify.readiness.path: /health/ready
+      k8ify.readiness.scheme: HTTPS
+      k8ify.readiness.periodSeconds: 31
+      k8ify.readiness.timeoutSeconds: 59
+      k8ify.readiness.initialDelaySeconds: 5
+      k8ify.readiness.successThreshold: 2
+      k8ify.readiness.failureThreshold: 4
+      k8ify.startup.path: /health/started
     environment:
       - mongodb_hostname=mongo
       - mongodb_username=portal

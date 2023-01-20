@@ -123,12 +123,16 @@ func composeServiceToDeployment(
 	deployment.Kind = "Deployment"
 	deployment.Name = composeService.Name + refSlug
 	deployment.Labels = labels
+	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(composeService)
 
 	templateSpec := composeServiceToPodTemplate(
 		deployment.Name,
 		composeService.Image,
 		secretName,
 		containerPorts,
+		livenessProbe,
+		readinessProbe,
+		startupProbe,
 		volumes,
 		volumeMounts,
 		labels,
@@ -162,12 +166,16 @@ func composeServiceToStatefulSet(
 	statefulset.Kind = "StatefulSet"
 	statefulset.Name = composeService.Name + refSlug
 	statefulset.Labels = labels
+	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(composeService)
 
 	templateSpec := composeServiceToPodTemplate(
 		statefulset.Name,
 		composeService.Image,
 		secretName,
 		containerPorts,
+		livenessProbe,
+		readinessProbe,
+		startupProbe,
 		volumes,
 		volumeMounts,
 		labels,
@@ -200,6 +208,9 @@ func composeServiceToPodTemplate(
 	image string,
 	secretName string,
 	ports []core.ContainerPort,
+	livenessProbe *core.Probe,
+	readinessProbe *core.Probe,
+	startupProbe *core.Probe,
 	volumes []core.Volume,
 	volumeMounts []core.VolumeMount,
 	labels map[string]string,
@@ -221,7 +232,10 @@ func composeServiceToPodTemplate(
 				},
 			},
 		},
-		VolumeMounts: volumeMounts,
+		VolumeMounts:   volumeMounts,
+		LivenessProbe:  livenessProbe,
+		ReadinessProbe: readinessProbe,
+		StartupProbe:   startupProbe,
 	}
 
 	podSpec := core.PodSpec{
@@ -318,6 +332,88 @@ func composeServiceToIngress(refSlug string, composeService composeTypes.Service
 		}
 	}
 	return ingresses
+}
+
+func composeServiceToProbe(config map[string]string, port intstr.IntOrString) *core.Probe {
+	if enabledStr, ok := config["enabled"]; ok {
+		if !util.IsTruthy(enabledStr) {
+			return nil
+		}
+	}
+
+	path := ""
+	if pathStr, ok := config["path"]; ok {
+		path = pathStr
+	}
+
+	scheme := core.URISchemeHTTP
+	if schemeStr, ok := config["scheme"]; ok {
+		if schemeStr == "HTTPS" || schemeStr == "https" {
+			scheme = core.URISchemeHTTPS
+		}
+	}
+
+	periodSeconds := util.ConfigGetInt32(config, "periodSeconds", 30)
+	timeoutSeconds := util.ConfigGetInt32(config, "timeoutSeconds", 60)
+	initialDelaySeconds := util.ConfigGetInt32(config, "initialDelaySeconds", 0)
+	successThreshold := util.ConfigGetInt32(config, "successThreshold", 1)
+	failureThreshold := util.ConfigGetInt32(config, "failureThreshold", 3)
+
+	probeHandler := core.ProbeHandler{}
+	if path == "" {
+		probeHandler.TCPSocket = &core.TCPSocketAction{
+			Port: port,
+		}
+	} else {
+		probeHandler.HTTPGet = &core.HTTPGetAction{
+			Path:   path,
+			Port:   port,
+			Scheme: scheme,
+		}
+	}
+
+	return &core.Probe{
+		ProbeHandler:        probeHandler,
+		PeriodSeconds:       periodSeconds,
+		TimeoutSeconds:      timeoutSeconds,
+		InitialDelaySeconds: initialDelaySeconds,
+		SuccessThreshold:    successThreshold,
+		FailureThreshold:    failureThreshold,
+	}
+}
+
+func composeServiceToProbes(composeService composeTypes.ServiceConfig) (*core.Probe, *core.Probe, *core.Probe) {
+	if len(composeService.Ports) == 0 {
+		return nil, nil, nil
+	}
+	port := intstr.IntOrString{IntVal: int32(composeService.Ports[0].Target)}
+	livenessConfig := util.SubConfig(composeService.Labels, "k8ify.liveness", "path")
+	readinessConfig := util.SubConfig(composeService.Labels, "k8ify.readiness", "path")
+	startupConfig := util.SubConfig(composeService.Labels, "k8ify.startup", "path")
+
+	// Protect application from overly eager livenessProbe during startup while keeping the startup fast.
+	// By default the startupProbe is the same as the livenessProbe except for periodSeconds and failureThreshold
+	for k, v := range livenessConfig {
+		if _, ok := startupConfig[k]; !ok {
+			startupConfig[k] = v
+		}
+	}
+	if _, ok := startupConfig["periodSeconds"]; !ok {
+		startupConfig["periodSeconds"] = "10"
+	}
+	if _, ok := startupConfig["failureThreshold"]; !ok {
+		startupConfig["failureThreshold"] = "30" // will try for a total of 300s
+	}
+
+	// By default the readinessProbe is disabled.
+	if len(readinessConfig) == 0 {
+		readinessConfig["enabled"] = "false"
+	}
+
+	livenessProbe := composeServiceToProbe(livenessConfig, port)
+	readinessProbe := composeServiceToProbe(readinessConfig, port)
+	startupProbe := composeServiceToProbe(startupConfig, port)
+	return livenessProbe, readinessProbe, startupProbe
 }
 
 func toRefSlug(ref string, composeService composeTypes.ServiceConfig) string {
