@@ -91,8 +91,8 @@ metadata:
   # Otherwise: "$name-$refSlug"
   name: "myapp-feat-foo"  # or "myapp"
 spec:
-  # hard-coded
-  replicas: 1
+  # `services.$name.deploy.replicas`, defaults to 1
+  replicas: 2
   strategy:
     # hard-coded
     type: Recreate
@@ -147,6 +147,8 @@ metadata:
   # Otherwise: "$name-$refSlug"
   name: "myapp-feat-foo"  # or "myapp"
 spec:
+  # `services.$name.deploy.replicas`, defaults to 1
+  replicas: 2
   template:
     spec:
       containers:
@@ -311,6 +313,8 @@ services:
     labels:
       k8ify.expose.8001: myapp.example.com
     image: docker.io/mycorp/myapp:v0.5.7
+    deploy:
+      replicas: 2
     ports:
       - "8001:8000"
       - "9001:9000"

@@ -135,7 +135,7 @@ func composeServiceToDeployment(
 	)
 
 	deployment.Spec = apps.DeploymentSpec{
-		Replicas: pointer.Int32(1),
+		Replicas: composeServiceToReplicas(composeService),
 		Strategy: strategy,
 		Template: templateSpec,
 		Selector: &metav1.LabelSelector{
@@ -174,7 +174,7 @@ func composeServiceToStatefulSet(
 	)
 
 	statefulset.Spec = apps.StatefulSetSpec{
-		Replicas: pointer.Int32(1),
+		Replicas: composeServiceToReplicas(composeService),
 		Template: templateSpec,
 		Selector: &metav1.LabelSelector{
 			MatchLabels: labels,
@@ -185,6 +185,16 @@ func composeServiceToStatefulSet(
 	return statefulset
 }
 
+func composeServiceToReplicas(composeService composeTypes.ServiceConfig) *int32 {
+	deploy := composeService.Deploy
+	if deploy == nil {
+		return pointer.Int32(1)
+	}
+	replicas := pointer.Uint64Deref(deploy.Replicas, 1)
+	// If you have over 2'000'000'000 replicas, you might have different problems :)
+	return pointer.Int32(int32(replicas))
+}
+
 func composeServiceToPodTemplate(
 	name string,
 	image string,
@@ -192,7 +202,8 @@ func composeServiceToPodTemplate(
 	ports []core.ContainerPort,
 	volumes []core.Volume,
 	volumeMounts []core.VolumeMount,
-	labels map[string]string) core.PodTemplateSpec {
+	labels map[string]string,
+) core.PodTemplateSpec {
 
 	container := core.Container{
 		Name:  name,
