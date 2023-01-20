@@ -7,7 +7,6 @@ metadata:
     k8ify.service: nginx
   name: nginx-mpi
 spec:
-  replicas: 1
   selector:
     matchLabels:
       k8ify.ref-slug: mpi

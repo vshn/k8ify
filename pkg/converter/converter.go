@@ -187,12 +187,12 @@ func composeServiceToStatefulSet(
 
 func composeServiceToReplicas(composeService composeTypes.ServiceConfig) *int32 {
 	deploy := composeService.Deploy
-	if deploy == nil {
-		return pointer.Int32(1)
+	if deploy == nil || deploy.Replicas == nil {
+		return nil
 	}
-	replicas := pointer.Uint64Deref(deploy.Replicas, 1)
-	// If you have over 2'000'000'000 replicas, you might have different problems :)
-	return pointer.Int32(int32(replicas))
+	// deploy.Replicas is an Uint64, but if you have over 2'000'000'000
+	// replicas, you might have different problems :)
+	return pointer.Int32(int32(*deploy.Replicas))
 }
 
 func composeServiceToPodTemplate(

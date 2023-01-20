@@ -91,7 +91,7 @@ metadata:
   # Otherwise: "$name-$refSlug"
   name: "myapp-feat-foo"  # or "myapp"
 spec:
-  # `services.$name.deploy.replicas`, defaults to 1
+  # `services.$name.deploy.replicas`, defaults to `nil`
   replicas: 2
   strategy:
     # hard-coded
@@ -147,7 +147,7 @@ metadata:
   # Otherwise: "$name-$refSlug"
   name: "myapp-feat-foo"  # or "myapp"
 spec:
-  # `services.$name.deploy.replicas`, defaults to 1
+  # `services.$name.deploy.replicas`, defaults to `nil`
   replicas: 2
   template:
     spec:
