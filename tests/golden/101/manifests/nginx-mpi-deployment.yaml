@@ -25,9 +25,23 @@ spec:
         - secretRef:
             name: nginx-mpi-env
         image: docker.io/library/nginx
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
         name: nginx-mpi
         ports:
         - containerPort: 80
         resources: {}
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
       restartPolicy: Always
 status: {}

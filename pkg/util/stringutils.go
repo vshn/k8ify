@@ -3,6 +3,7 @@ package util
 import (
 	"crypto/sha512"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -58,6 +59,15 @@ func SubConfig(config map[string]string, prefix string, defaultKey string) map[s
 		}
 	}
 	return subConfig
+}
+
+func ConfigGetInt32(config map[string]string, key string, defaultValue int32) int32 {
+	if valStr, ok := config[key]; ok {
+		if valInt, err := strconv.Atoi(valStr); err == nil {
+			return int32(valInt)
+		}
+	}
+	return defaultValue
 }
 
 func IsTruthy(s string) bool {
