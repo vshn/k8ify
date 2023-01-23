@@ -7,7 +7,6 @@ metadata:
     k8ify.service: mongo
   name: mongo
 spec:
-  replicas: 1
   selector:
     matchLabels:
       k8ify.service: mongo
