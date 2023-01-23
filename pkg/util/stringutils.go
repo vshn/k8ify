@@ -3,7 +3,6 @@ package util
 import (
 	"crypto/sha512"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -45,29 +44,6 @@ func ByteArrayToAlpha(bytes []byte) string {
 		str = str + string(bytes[i]/16+97) + string(bytes[i]%16+97)
 	}
 	return str
-}
-
-func SubConfig(config map[string]string, prefix string, defaultKey string) map[string]string {
-	subConfig := make(map[string]string)
-	for key, value := range config {
-		if key == prefix {
-			subConfig[defaultKey] = value
-		}
-		if strings.HasPrefix(key, prefix+".") && len(key) > (len(prefix)+1) {
-			subKey := key[len(prefix)+1:]
-			subConfig[subKey] = value
-		}
-	}
-	return subConfig
-}
-
-func ConfigGetInt32(config map[string]string, key string, defaultValue int32) int32 {
-	if valStr, ok := config[key]; ok {
-		if valInt, err := strconv.Atoi(valStr); err == nil {
-			return int32(valInt)
-		}
-	}
-	return defaultValue
 }
 
 func IsTruthy(s string) bool {
