@@ -115,9 +115,6 @@ func composeServiceToDeployment(
 	labels map[string]string,
 ) apps.Deployment {
 
-	strategy := apps.DeploymentStrategy{}
-	strategy.Type = apps.RecreateDeploymentStrategyType
-
 	deployment := apps.Deployment{}
 	deployment.APIVersion = "apps/v1"
 	deployment.Kind = "Deployment"
@@ -140,7 +137,7 @@ func composeServiceToDeployment(
 
 	deployment.Spec = apps.DeploymentSpec{
 		Replicas: composeServiceToReplicas(composeService),
-		Strategy: strategy,
+		Strategy: composeServiceToStrategy(composeService),
 		Template: templateSpec,
 		Selector: &metav1.LabelSelector{
 			MatchLabels: labels,
@@ -148,6 +145,29 @@ func composeServiceToDeployment(
 	}
 
 	return deployment
+}
+
+func composeServiceToStrategy(composeService composeTypes.ServiceConfig) apps.DeploymentStrategy {
+	order := getUpdateOrder(composeService)
+	var typ apps.DeploymentStrategyType
+
+	switch order {
+	case "start-first":
+		typ = apps.RollingUpdateDeploymentStrategyType
+	default:
+		typ = apps.RecreateDeploymentStrategyType
+	}
+
+	return apps.DeploymentStrategy{
+		Type: typ,
+	}
+}
+
+func getUpdateOrder(composeService composeTypes.ServiceConfig) string {
+	if composeService.Deploy == nil || composeService.Deploy.UpdateConfig == nil {
+		return "stop-first"
+	}
+	return composeService.Deploy.UpdateConfig.Order
 }
 
 func composeServiceToStatefulSet(

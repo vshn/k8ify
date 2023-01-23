@@ -94,7 +94,9 @@ spec:
   # `services.$name.deploy.replicas`, defaults to `nil`
   replicas: 2
   strategy:
-    # hard-coded
+    # Depending on `services.$name.deploy.update_config.order`:
+    # * `stop-first` (default) -> `Recreate`
+    # * `start-first` -> `Rolling`
     type: Recreate
   template:
     spec:
