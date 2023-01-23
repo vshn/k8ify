@@ -3,7 +3,3 @@ services:
     image: docker.io/library/nginx
     ports:
       - '8080:80'
-    deploy:
-      replicas: 3
-      update_config:
-        order: start-first
