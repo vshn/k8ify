@@ -12,6 +12,11 @@ func TestSanitize(t *testing.T) {
 	assert.Equal(t, "feat-foo1", util.Sanitize("feat/foo1"))
 	assert.Equal(t, "test", util.Sanitize("1test"))
 	assert.Equal(t, "feat-foo1", util.Sanitize("/feat/foo1"))
+	assert.Equal(t, "leading", util.Sanitize("-leading"))
+	assert.Equal(t, "leading", util.Sanitize("0-leading"))
+	assert.Equal(t, "trailing", util.Sanitize("trailing-"))
+	assert.Equal(t, "trailing", util.Sanitize("trailing--"))
+	assert.Equal(t, "both", util.Sanitize("--both--"))
 }
 
 func TestSanitiziWithMinLength(t *testing.T) {

@@ -15,7 +15,7 @@ func Sanitize(str string) string {
 	// replace multiple subsequent "-" by a single "-"
 	str = regexp.MustCompile("-+").ReplaceAllString(str, "-")
 	// remove "-" and numbers at beginning, "-" at end of string
-	str = regexp.MustCompile("^[0-9-]*([^-]*)-?$").ReplaceAllString(str, "${1}")
+	str = regexp.MustCompile("^[0-9-]+|-+$").ReplaceAllString(str, "")
 	return str
 }
 
