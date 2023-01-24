@@ -121,6 +121,7 @@ func composeServiceToDeployment(
 	deployment.Name = composeService.Name + refSlug
 	deployment.Labels = labels
 	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(composeService)
+	resources := composeServiceToResourceRequirements(composeService)
 
 	templateSpec := composeServiceToPodTemplate(
 		deployment.Name,
@@ -133,6 +134,7 @@ func composeServiceToDeployment(
 		volumes,
 		volumeMounts,
 		labels,
+		resources,
 	)
 
 	deployment.Spec = apps.DeploymentSpec{
@@ -187,6 +189,7 @@ func composeServiceToStatefulSet(
 	statefulset.Name = composeService.Name + refSlug
 	statefulset.Labels = labels
 	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(composeService)
+	resources := composeServiceToResourceRequirements(composeService)
 
 	templateSpec := composeServiceToPodTemplate(
 		statefulset.Name,
@@ -199,6 +202,7 @@ func composeServiceToStatefulSet(
 		volumes,
 		volumeMounts,
 		labels,
+		resources,
 	)
 
 	statefulset.Spec = apps.StatefulSetSpec{
@@ -234,6 +238,7 @@ func composeServiceToPodTemplate(
 	volumes []core.Volume,
 	volumeMounts []core.VolumeMount,
 	labels map[string]string,
+	resources core.ResourceRequirements,
 ) core.PodTemplateSpec {
 
 	container := core.Container{
@@ -256,6 +261,7 @@ func composeServiceToPodTemplate(
 		LivenessProbe:  livenessProbe,
 		ReadinessProbe: readinessProbe,
 		StartupProbe:   startupProbe,
+		Resources:      resources,
 	}
 
 	podSpec := core.PodSpec{
@@ -434,6 +440,45 @@ func composeServiceToProbes(composeService composeTypes.ServiceConfig) (*core.Pr
 	readinessProbe := composeServiceToProbe(readinessConfig, port)
 	startupProbe := composeServiceToProbe(startupConfig, port)
 	return livenessProbe, readinessProbe, startupProbe
+}
+
+func composeServiceToResourceRequirements(composeService composeTypes.ServiceConfig) core.ResourceRequirements {
+	requestsMap := core.ResourceList{}
+	limitsMap := core.ResourceList{}
+
+	if composeService.Deploy != nil {
+		if composeService.Deploy.Resources.Reservations != nil {
+			// NanoCPU appears to be a misnomer, it's actually a float indicating the number of CPU cores, nothing 'nano'
+			cpuRequest, err := strconv.ParseFloat(composeService.Deploy.Resources.Reservations.NanoCPUs, 64)
+			if err == nil && cpuRequest > 0 {
+				requestsMap["cpu"] = resource.MustParse(fmt.Sprintf("%f", cpuRequest))
+				limitsMap["cpu"] = resource.MustParse(fmt.Sprintf("%f", cpuRequest*10.0))
+			}
+			memRequest := composeService.Deploy.Resources.Reservations.MemoryBytes
+			if memRequest > 0 {
+				requestsMap["memory"] = resource.MustParse(fmt.Sprintf("%dMi", memRequest/1024/1024))
+				limitsMap["memory"] = resource.MustParse(fmt.Sprintf("%dMi", memRequest/1024/1024))
+			}
+		}
+		if composeService.Deploy.Resources.Limits != nil {
+			// If there are explicit limits configured we ignore the defaults calculated from the requests
+			limitsMap = core.ResourceList{}
+			cpuLimit, err := strconv.ParseFloat(composeService.Deploy.Resources.Limits.NanoCPUs, 64)
+			if err == nil && cpuLimit > 0 {
+				limitsMap["cpu"] = resource.MustParse(fmt.Sprintf("%f", cpuLimit))
+			}
+			memLimit := composeService.Deploy.Resources.Limits.MemoryBytes
+			if memLimit > 0 {
+				limitsMap["memory"] = resource.MustParse(fmt.Sprintf("%dMi", memLimit/1024/1024))
+			}
+		}
+	}
+
+	resources := core.ResourceRequirements{
+		Requests: requestsMap,
+		Limits:   limitsMap,
+	}
+	return resources
 }
 
 func toRefSlug(ref string, composeService composeTypes.ServiceConfig) string {

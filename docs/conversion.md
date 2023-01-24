@@ -154,6 +154,17 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 60
+          resources:
+            limits:
+              # `services.$name.deploy.resources.limits.cpu`, defaults to reservations * 10
+              cpu: "1"
+              # `services.$name.deploy.resources.limits.memory`, defaults to same value as reservations
+              memory: 256Mi
+            requests:
+              # `services.$name.deploy.resources.reservations.cpu`
+              cpu: 100m
+              # `services.$name.deploy.resources.reservations.memory`
+              memory: 256Mi
       # Values from `services.$name.volumes`, translated as the volumeMounts above
       volumes:
         - name: myapp-claim0
@@ -235,6 +246,17 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 60
+          resources:
+            limits:
+              # `services.$name.deploy.resources.limits.cpu`, defaults to reservations * 10
+              cpu: "1"
+              # `services.$name.deploy.resources.limits.memory`, defaults to same value as reservations
+              memory: 256Mi
+            requests:
+              # `services.$name.deploy.resources.reservations.cpu`
+              cpu: 100m
+              # `services.$name.deploy.resources.reservations.memory`
+              memory: 256Mi
       # See PersistentVolumeClaim below for how the values are generated.
       volumeTemplates:
         - name: "myapp-claim0"

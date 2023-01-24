@@ -32,7 +32,12 @@ spec:
         name: mongo
         ports:
         - containerPort: 27017
-        resources: {}
+        resources:
+          limits:
+            memory: 8Gi
+          requests:
+            cpu: 500m
+            memory: 4Gi
         startupProbe:
           failureThreshold: 30
           periodSeconds: 10
