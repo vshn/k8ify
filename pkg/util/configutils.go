@@ -1,8 +1,13 @@
 package util
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
+)
+
+var (
+	reTrue = regexp.MustCompile("(?i)^true|yes|1$")
 )
 
 // SubConfig extracts the keys that start with a given prefix from a given
@@ -38,4 +43,13 @@ func ConfigGetInt32(config map[string]string, key string, defaultValue int32) in
 		}
 	}
 	return defaultValue
+}
+
+// IsTruthy determines whether the given string is a representation of a "true"
+// state.
+//
+// Concretly, it currently tests for "true", "yes" or "1", ignoring character
+// cases.
+func IsTruthy(s string) bool {
+	return reTrue.MatchString(s)
 }

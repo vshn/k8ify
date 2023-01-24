@@ -7,19 +7,18 @@ import (
 	"github.com/vshn/k8ify/pkg/util"
 )
 
-func TestIsTruthy(t *testing.T) {
-	assert := assert.New(t)
-	assert.True(util.IsTruthy("true"))
-	assert.True(util.IsTruthy("True"))
-	assert.True(util.IsTruthy("TRUE"))
-	assert.True(util.IsTruthy("yes"))
-	assert.True(util.IsTruthy("YES"))
-	assert.True(util.IsTruthy("1"))
+func TestSanitize(t *testing.T) {
+	assert.Equal(t, "foo", util.Sanitize("foo"))
+	assert.Equal(t, "feat-foo1", util.Sanitize("feat/foo1"))
+	assert.Equal(t, "test", util.Sanitize("1test"))
+	assert.Equal(t, "feat-foo1", util.Sanitize("/feat/foo1"))
+}
 
-	assert.False(util.IsTruthy("false"))
-	assert.False(util.IsTruthy("False"))
-	assert.False(util.IsTruthy("FALSE"))
-	assert.False(util.IsTruthy("no"))
-	assert.False(util.IsTruthy("NO"))
-	assert.False(util.IsTruthy("0"))
+func TestSanitiziWithMinLength(t *testing.T) {
+	assert.Equal(t, "foobar", util.SanitizeWithMinLength("foobar", 6))
+	assert.Equal(t, "phpllk", util.SanitizeWithMinLength("foo", 6))
+}
+
+func TestByteArrayToAlpha(t *testing.T) {
+	assert.Equal(t, "aaabacad", util.ByteArrayToAlpha([]byte{0, 1, 2, 3}))
 }

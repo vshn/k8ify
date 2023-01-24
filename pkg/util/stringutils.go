@@ -6,10 +6,8 @@ import (
 	"strings"
 )
 
-var (
-	reTrue = regexp.MustCompile("(?i)^true|yes|1$")
-)
-
+// Sanitize ensures a string only contains alphanumeric characters, and starts
+// with a letter
 func Sanitize(str string) string {
 	str = strings.ToLower(str)
 	// replace all non-alphanumeric characters by "-"
@@ -21,6 +19,10 @@ func Sanitize(str string) string {
 	return str
 }
 
+// SanitizeWithMinLength applies `Sanitize`, and then ensures the result is at least `minLength` characters long.
+//
+// If the resulting string is too short, a stable generated value of
+// `minLength` characters will be returned.
 func SanitizeWithMinLength(str string, minLength int) string {
 	if minLength > 128 {
 		// The hash fall-back never produces anything longer than 128 chars so minLength above 128 does not work
@@ -44,8 +46,4 @@ func ByteArrayToAlpha(bytes []byte) string {
 		str = str + string(bytes[i]/16+97) + string(bytes[i]%16+97)
 	}
 	return str
-}
-
-func IsTruthy(s string) bool {
-	return reTrue.MatchString(s)
 }
