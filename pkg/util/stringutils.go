@@ -3,14 +3,11 @@ package util
 import (
 	"crypto/sha512"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
-var (
-	reTrue = regexp.MustCompile("(?i)^true|yes|1$")
-)
-
+// Sanitize ensures a string only contains alphanumeric characters, and starts
+// with a letter
 func Sanitize(str string) string {
 	str = strings.ToLower(str)
 	// replace all non-alphanumeric characters by "-"
@@ -18,10 +15,14 @@ func Sanitize(str string) string {
 	// replace multiple subsequent "-" by a single "-"
 	str = regexp.MustCompile("-+").ReplaceAllString(str, "-")
 	// remove "-" and numbers at beginning, "-" at end of string
-	str = regexp.MustCompile("^[0-9-]*([^-]*)-?$").ReplaceAllString(str, "${1}")
+	str = regexp.MustCompile("^[0-9-]+|-+$").ReplaceAllString(str, "")
 	return str
 }
 
+// SanitizeWithMinLength applies `Sanitize`, and then ensures the result is at least `minLength` characters long.
+//
+// If the resulting string is too short, a stable generated value of
+// `minLength` characters will be returned.
 func SanitizeWithMinLength(str string, minLength int) string {
 	if minLength > 128 {
 		// The hash fall-back never produces anything longer than 128 chars so minLength above 128 does not work
@@ -45,31 +46,4 @@ func ByteArrayToAlpha(bytes []byte) string {
 		str = str + string(bytes[i]/16+97) + string(bytes[i]%16+97)
 	}
 	return str
-}
-
-func SubConfig(config map[string]string, prefix string, defaultKey string) map[string]string {
-	subConfig := make(map[string]string)
-	for key, value := range config {
-		if key == prefix {
-			subConfig[defaultKey] = value
-		}
-		if strings.HasPrefix(key, prefix+".") && len(key) > (len(prefix)+1) {
-			subKey := key[len(prefix)+1:]
-			subConfig[subKey] = value
-		}
-	}
-	return subConfig
-}
-
-func ConfigGetInt32(config map[string]string, key string, defaultValue int32) int32 {
-	if valStr, ok := config[key]; ok {
-		if valInt, err := strconv.Atoi(valStr); err == nil {
-			return int32(valInt)
-		}
-	}
-	return defaultValue
-}
-
-func IsTruthy(s string) bool {
-	return reTrue.MatchString(s)
 }
