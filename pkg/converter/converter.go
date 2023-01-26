@@ -309,7 +309,7 @@ func composeServiceToIngress(refSlug string, composeService composeTypes.Service
 			}
 
 			ingressServiceBackend := networking.IngressServiceBackend{
-				Name: composeService.Name,
+				Name: composeService.Name + refSlug,
 				Port: serviceBackendPort,
 			}
 
