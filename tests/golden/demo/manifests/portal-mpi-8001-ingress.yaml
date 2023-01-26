@@ -16,7 +16,7 @@ spec:
       paths:
       - backend:
           service:
-            name: portal
+            name: portal-mpi
             port:
               number: 8001
         path: /
