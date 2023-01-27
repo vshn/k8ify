@@ -59,6 +59,7 @@ func Main(args []string) int {
 	objects := converter.Objects{}
 
 	for _, composeService := range project.Services {
+		internal.ComposeServicePrecheck(composeService)
 		objects = objects.Append(converter.ComposeServiceToK8s(config.Ref, composeService))
 	}
 

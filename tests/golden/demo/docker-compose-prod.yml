@@ -4,6 +4,10 @@ services:
     image: image-registry.openshift-image-registry.svc:5000/portal/portal:latest
     deploy:
       replicas: 2
+      resources:
+        reservations:
+          cpus: '0.1'
+          memory: 2G
     labels:
       k8ify.expose.8001: 'portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud'
       k8ify.expose.9001: 'portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud'
@@ -25,3 +29,10 @@ services:
   mongo:
     labels:
       k8ify.singleton: true
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          cpus: '0.5'
+          memory: 4G
