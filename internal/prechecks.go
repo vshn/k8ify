@@ -26,7 +26,7 @@ func ComposeServicePrecheck(composeService composeTypes.ServiceConfig) {
 		logRed(fmt.Sprintf("      %s:", composeService.Name))
 		logRed("        deploy:")
 		logRed("          resources:")
-		logRed("            reservations:    # Minimum guaranted by K8s to be always available")
+		logRed("            reservations:    # Minimum guaranteed by K8s to be always available")
 		logRed("              cpus: \"0.2\"    # Number of CPU cores. Quotes are required!")
 		logRed("              memory: 256M")
 		logRed(hLine)
