@@ -22,7 +22,12 @@ spec:
         k8ify.service: portal
     spec:
       containers:
-      - envFrom:
+      - args:
+        - Hello World
+        - and hi k8ify!
+        command:
+        - echo
+        envFrom:
         - secretRef:
             name: portal-mpi-env
         image: image-registry.openshift-image-registry.svc:5000/portal/portal:latest
