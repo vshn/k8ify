@@ -20,7 +20,11 @@ services:
       - "8001:8000"
     volumes:
       - ./:/src
-    command: sbt run
+    entrypoint: 
+      - echo
+    command:
+      - "Hello World"
+      - "and hi k8ify!"
     stdin_open: true
     tty: true
     user: ${UID:-0}:${GID:-0}

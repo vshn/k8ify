@@ -135,6 +135,8 @@ func composeServiceToDeployment(
 		volumeMounts,
 		labels,
 		resources,
+		composeService.Entrypoint,
+		composeService.Command,
 	)
 
 	deployment.Spec = apps.DeploymentSpec{
@@ -203,6 +205,8 @@ func composeServiceToStatefulSet(
 		volumeMounts,
 		labels,
 		resources,
+		composeService.Entrypoint,
+		composeService.Command,
 	)
 
 	statefulset.Spec = apps.StatefulSetSpec{
@@ -239,6 +243,8 @@ func composeServiceToPodTemplate(
 	volumeMounts []core.VolumeMount,
 	labels map[string]string,
 	resources core.ResourceRequirements,
+	entrypoint []string,
+	command []string,
 ) core.PodTemplateSpec {
 
 	container := core.Container{
@@ -262,6 +268,8 @@ func composeServiceToPodTemplate(
 		ReadinessProbe: readinessProbe,
 		StartupProbe:   startupProbe,
 		Resources:      resources,
+		Command:        entrypoint, // ENTRYPOINT in Docker == 'entrypoint' in Compose == 'command' in K8s
+		Args:           command,    // CMD in Docker == 'command' in Compose == 'args' in K8s
 	}
 
 	podSpec := core.PodSpec{

@@ -165,6 +165,10 @@ spec:
               cpu: 100m
               # `services.$name.deploy.resources.reservations.memory`
               memory: 256Mi
+          # `services.$name.entrypoint`, overwrites 'ENTRYPOINT' in Dockerfile
+          command: ["echo"]
+          # `services.$name.command`, overwrites 'CMD' in Dockerfile
+          args: ["Hello World"]
       # Values from `services.$name.volumes`, translated as the volumeMounts above
       volumes:
         - name: myapp-claim0
@@ -257,6 +261,10 @@ spec:
               cpu: 100m
               # `services.$name.deploy.resources.reservations.memory`
               memory: 256Mi
+          # `services.$name.entrypoint`, overwrites 'ENTRYPOINT' in Dockerfile
+          command: ["echo"]
+          # `services.$name.command`, overwrites 'CMD' in Dockerfile
+          args: ["Hello World"]
       # See PersistentVolumeClaim below for how the values are generated.
       volumeTemplates:
         - name: "myapp-claim0"
@@ -402,7 +410,8 @@ services:
     volumes:
       - "./:/src"
       - "myapp_data:/data"
-    command: sbt run
+    entrypoint: ["echo"]
+    command: ["Hello World"]
     environment:
       - mongodb_hostname=mongo
       - mongodb_database=$MONGO_DB
