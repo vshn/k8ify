@@ -22,6 +22,7 @@ spec:
         - secretRef:
             name: mongo-env
         image: mongo:4.0
+        imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
           periodSeconds: 30

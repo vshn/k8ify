@@ -31,6 +31,7 @@ spec:
         - secretRef:
             name: portal-mpi-env
         image: image-registry.openshift-image-registry.svc:5000/portal/portal:latest
+        imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
           httpGet:

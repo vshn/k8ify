@@ -25,6 +25,7 @@ spec:
         - secretRef:
             name: nginx-mpi-env
         image: docker.io/library/nginx
+        imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
           periodSeconds: 30
