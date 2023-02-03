@@ -263,13 +263,14 @@ func composeServiceToPodTemplate(
 				},
 			},
 		},
-		VolumeMounts:   volumeMounts,
-		LivenessProbe:  livenessProbe,
-		ReadinessProbe: readinessProbe,
-		StartupProbe:   startupProbe,
-		Resources:      resources,
-		Command:        entrypoint, // ENTRYPOINT in Docker == 'entrypoint' in Compose == 'command' in K8s
-		Args:           command,    // CMD in Docker == 'command' in Compose == 'args' in K8s
+		VolumeMounts:    volumeMounts,
+		LivenessProbe:   livenessProbe,
+		ReadinessProbe:  readinessProbe,
+		StartupProbe:    startupProbe,
+		Resources:       resources,
+		Command:         entrypoint, // ENTRYPOINT in Docker == 'entrypoint' in Compose == 'command' in K8s
+		Args:            command,    // CMD in Docker == 'command' in Compose == 'args' in K8s
+		ImagePullPolicy: core.PullAlways,
 	}
 
 	podSpec := core.PodSpec{

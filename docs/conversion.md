@@ -169,6 +169,8 @@ spec:
           command: ["echo"]
           # `services.$name.command`, overwrites 'CMD' in Dockerfile
           args: ["Hello World"]
+          # hard-coded
+          imagePullPolicy: Always
       # Values from `services.$name.volumes`, translated as the volumeMounts above
       volumes:
         - name: myapp-claim0
@@ -265,6 +267,8 @@ spec:
           command: ["echo"]
           # `services.$name.command`, overwrites 'CMD' in Dockerfile
           args: ["Hello World"]
+          # hard-coded
+          imagePullPolicy: Always
       # See PersistentVolumeClaim below for how the values are generated.
       volumeTemplates:
         - name: "myapp-claim0"
