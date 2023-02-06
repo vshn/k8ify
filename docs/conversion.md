@@ -99,6 +99,12 @@ spec:
     # * `start-first` -> `Rolling`
     type: Recreate
   template:
+    metadata:
+      annotations:
+        # If this Deployment uses one of the images that have been flagged as
+        # modified via the --modified-image argument, this is set to the current
+        # timestamp to ensure restarts of all pods
+        k8ify.restart-trigger: "1675680748"
     spec:
       containers:
           # If singleton or no ref given: `$name`, otherwise: `$name-$refSlug`
@@ -197,6 +203,12 @@ spec:
   # `services.$name.deploy.replicas`, defaults to `nil`
   replicas: 2
   template:
+    metadata:
+      annotations:
+        # If this StatefulSet uses one of the images that have been flagged as
+        # modified via the --modified-image argument, this is set to the current
+        # timestamp to ensure restarts of all pods
+        k8ify.restart-trigger: "1675680748"
     spec:
       containers:
           # If singleton or no ref given: `$name`, otherwise: `$name-$refSlug`

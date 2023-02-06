@@ -37,10 +37,13 @@ This results in flexibility to support various modes of deployment, be it plain 
 `k8ify` takes compose files in the current working directory and converts them to Kubernetes manfests. The manifests are written to the `manifests` directory.
 
 
-### Parameters
+### Command Line Arguments
 
-`k8ify` has 2 parameters: `environment` and `ref`. Both are optional.
+`k8ify` supports the following command line arguments:
 
+- Argument #1: `environment`. Optional.
+- Argument #2: `ref`. Optional.
+- `--modified-image [IMAGE]`: IMAGE has changed. Optional, repeatable.
 
 #### `environment`
 
@@ -65,6 +68,16 @@ A resulting deployment might look like this:
 - deployment/service `mongodb` (singleton) with secret `mongodb-env`
 - deployment/service `myapp-testbranch1` with secret `myapp-testbranch1-env`
 - deployment/service `myapp-testbranch2` with secret `myapp-testbranch2-env`
+
+#### `--modified-image [IMAGE]` - Handling image rebuilding with the same image tag
+
+A build pipeline usually builds at least one image, tags it with a version number or branch name and pushes it to a registry. If the tag is new, the Deployments/ReplicaSets using this image get updated with the new version number. This will cause K8s to restart the corresponding Pods in order for them to use the new image.
+
+However, if the image tag stays the same (which is often the case for test branches) there is a problem: The Deployment/ReplicaSet does not need to change at all, and if there is no change K8s does not roll out the new image.
+
+To work around this problem k8ify can introduce a dummy change to the Deployment/ReplicaSet to force the roll-out. In order to identify which Deployments/ReplicaSets need this dummy change, you can tell k8ify which images have been rebuilt and k8ify will automatically find the relevant Deployments/ReplicaSets.
+
+This parameter is generally set by the CI/CD pipeline, because the pipeline knows which images it has generated in earlier steps. The image should be specified as `$SERVICE:$TAG` or `$NAMESPACE/$SERVICE:$TAG`, depending on how specific you need to be. You can repeat this parameter for any number of images.
 
 
 ### Labels
