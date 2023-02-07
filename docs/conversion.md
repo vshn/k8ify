@@ -11,7 +11,7 @@ This results in the following list of Kubernetes resource for each compose servi
 * 1 Workload ([`Deployment`](#k8s-deployment) or [`StatefulSet`](#k8s-statefulset))
 * 0-1 [`Service`](#k8s-service) (a single service can cover multiple ports; if no ports are exposed no service is created)
 * 1 [`Secret`](#k8s-secret) (may be empty)
-* 0-n [`PersistentVolumeClaim`](#k8s-persistentvolumeclaim) (one per volume)
+* 0-n [`PersistentVolumeClaim`](#k8s-persistentvolumeclaim) (optionally one per volume)
 * 0-n [`Ingress`](#k8s-ingress) (one per port, IF enabled via `k8ify.expose` label on the compose service)
 
 
@@ -21,23 +21,32 @@ Some compose concepts don't match neatly onto Kubernetes concepts, so some speci
 
 #### Ingress
 
-In order to make a service available to the outside world, we need to support Ingresses. However compose files have no notion of "available to the outside world", hence there is no direct way of generating an Ingress from the data in a compose file. Hence setting up Ingresses is implemented via compose service labels (see [Labels](../README.md#labels)).
+In order to make a service available to the outside world, we need to support Ingresses. However, compose files have no notion of "available to the outside world", hence there is no direct way of generating an Ingress from the data in a compose file. Hence, setting up Ingresses is implemented via compose service labels (see [Labels](../README.md#labels)).
 
 
 #### Environment variables and Secrets
 
-Compose supports secrets and environment variables. However the "secret" support is limited to file-based secrets, which are inherently incompatible with the Twelve-Factor Application principles, thus we don't want to use these.
+Compose supports secrets and environment variables. However, the "secret" support is limited to file-based secrets, which are inherently incompatible with the Twelve-Factor Application principles, thus we don't want to use these.
 
-Instead we only use the "environment" functionality of compose. However, environment variables can contain sensitive information, and we don't know which ones do and which ones don't. Thus the conversion does not store any environment variables in the deployment, but puts a secretRef in there and then writes all environment variables to one secret per compose service.
+Instead, we only use the "environment" functionality of compose. However, environment variables can contain sensitive information, and we don't know which ones do and which ones don't. Thus, the conversion does not store any environment variables in the deployment, but puts a secretRef in there and then writes all environment variables to one secret per compose service.
+
+
+#### Volumes
+
+Only volumes defined in the `volumes` topl level section of the Compose files are taken into consideration. Local bind mounts or `tmpfs` mounts are ignored.
+
+By default Volumes will be assigned the `ReadWriteOnce` access mode to prevent multiple instances of an application writing to the same storage location.
+
+This chan be changed to `ReadWriteMany` by adding the label `k8ify.shared: true` to the volume.
 
 
 #### Deployments vs. StatefulSets
 
-By default a compose service will be translated into a `Deployment`.
+By default, a compose service will be translated into a `Deployment`.
 
-If the compose service has volumes defined, a `StatefulSet` is used instead. This results in every replica getting its own `ReadWriteOnce` PersistentVolume.
+If the compose service has non-shared (`ReadWriteOnce`) volumes mounted, a `StatefulSet` is used instead. This results in every replica getting its own `ReadWriteOnce` PersistentVolume.
 
-This behaviour can be changed by setting the `k8ify.share-storage: true` label on the compose service. If the label is set to a truthy value, a Deployment will be used, and a `ReadWriteMany` PersistentVolumeClaim is created for each volume.
+If a compose service only uses shared (`ReadWriteMany`) volumes, it will still be translated into a `Deployment`.
 
 
 #### Labels
@@ -46,7 +55,7 @@ Note that K8ify works with both Labels on Compose services (set in Compose files
 Labels are not automatically copied from Compose files to Kubernetes manifests.
 Instead, the two concepts are used for different purposes:
 
-Labes on **Compose services** are used to **configure** and customize manifest generation.
+Labels on **Compose services** and **volumes** are used to **configure** and customize manifest generation.
 
 Labels on the generated **Kubernetes resources** are used to **identify** resources managed via K8ify.
 
@@ -65,8 +74,8 @@ labels:
 
 The following variables will be used in the table below:
 
-* `$name` - Name of the Compose service (eg the "key" in the `services` map in the Compose file), eg. **myapp**
-* `$ref` - Name of the `ref` passed to `k8ify`, see [Parameters](../README.md#parameters), eg. **feat/foo**
+* `$name` - Name of the Compose service (eg the "key" in the `services` map in the Compose file), e.g. **myapp**
+* `$ref` - Name of the `ref` passed to `k8ify`, see [Parameters](../README.md#parameters), e.g. **feat/foo**
 * `$refSlug` - Normalized version of `ref` that is a valid DNS label (and hence can be used as a Kubernetes label value), eg **feat-foo**
 
 See [Example input](#example-input) below on how a Compose file would have to look to generat the following example manifests.
@@ -123,15 +132,12 @@ spec:
           ports:
             - containerPort: 8000
             - containerPort: 9000
-          # List of all the values from `service.$name.volumes`:
+          # List of all volume mounts from `service.$name.volumes`:
           # * `mountPath` is the part behind ":"
-          # * `name` is either the sanitized part before ":", or a generated
-          #   name: `$name-claim$i`
+          # * `name` is the sanitized volume name: `myapp-data`
           volumeMounts:
-            - mountPath: /src
-              name: myapp-claim0
             - mountPath: /data
-              name: myapp_data
+              name: myapp-data
           # By default both a livenessProbe and startupProbe are set up.
           # `services.$name.labels["k8ify.liveness"]` and sub-labels
           livenessProbe:
@@ -179,12 +185,9 @@ spec:
           imagePullPolicy: Always
       # Values from `services.$name.volumes`, translated as the volumeMounts above
       volumes:
-        - name: myapp-claim0
+        - name: myapp-data
           persistentVolumeClaim:
-            claimName: myapp-claim0
-        - name: myapp_data
-          persistentVolumeClaim:
-            claimName: myapp_data
+            claimName: myapp-data
 ```
 
 
@@ -227,15 +230,12 @@ spec:
           ports:
             - containerPort: 8000
             - containerPort: 9000
-          # List of all the values from `service.$name.volumes`:
+          # List of all volume mounts from `service.$name.volumes`:
           # * `mountPath` is the part behind ":"
-          # * `name` is either the sanitized part before ":", or a generated
-          #   name: `$name-claim$i`
+          # * `name` is the sanitized volume name: `myapp-data`
           volumeMounts:
-            - mountPath: /src
-              name: myapp-claim0
             - mountPath: /data
-              name: myapp_data
+              name: myapp-data
           # By default both a livenessProbe and startupProbe are set up.
           # `services.$name.labels["k8ify.liveness"]` and sub-labels
           livenessProbe:
@@ -283,7 +283,15 @@ spec:
           imagePullPolicy: Always
       # See PersistentVolumeClaim below for how the values are generated.
       volumeTemplates:
-        - name: "myapp-claim0"
+        - metadata:
+            name: myapp-data
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                # Value of the `k8ify.size` label on the volume
+                storage: 10Gi
 ```
 
 
@@ -341,14 +349,14 @@ metadata:
   # named
   name: "myapp-feat-foo"  # or "myapp"
 spec:
-  # If "k8ify.shared-storage" (via label): "ReadWriteMany"
+  # If "k8ify.shared" (via label): "ReadWriteMany"
   # Otherwise: "ReadWriteOnce"
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      # TODO: this is currently hard-coded (:
-      storage: 100Mi
+      # Value of the `k8ify.size` label on the volume
+      storage: 10Gi
 ```
 
 
@@ -431,4 +439,9 @@ services:
     environment:
       - mongodb_hostname=mongo
       - mongodb_database=$MONGO_DB
+
+volumes:
+  myapp_data:
+    labels:
+      k8ify.size: 10Gi
 ```

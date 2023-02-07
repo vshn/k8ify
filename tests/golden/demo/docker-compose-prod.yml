@@ -36,3 +36,8 @@ services:
         reservations:
           cpus: '0.5'
           memory: 4G
+
+volumes:
+  mongodb_data:
+    labels:
+      k8ify.singleton: true

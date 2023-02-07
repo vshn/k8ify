@@ -82,16 +82,25 @@ This parameter is generally set by the CI/CD pipeline, because the pipeline know
 
 ### Labels
 
-`k8ify` supports configuring services by using compose labels. All labels are optional.
+`k8ify` supports configuring services and volumes by using compose labels. All labels are optional.
 
 #### General
+
+Service Labels
 
 | Label  | Effect  |
 | ------ | ------- |
 | `k8ify.singleton: true`  | Compose service is only deployed once per environment instead of once per `$ref` per environment  |
 | `k8ify.expose: $host`  | The first port is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
 | `k8ify.expose.$port: $host`  | The port `$port` is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
-| `k8ify.share-storage: true` | Instead of using a StatefulSet when volumes are detected, use a Deployment that shares the volume between instances. |
+
+Volume Labels
+
+| Label  | Effect  |
+| ------ | ------- |
+| `k8ify.size: 10Gi`  | Requested volume size. Defaults to `100Mi`.  |
+| `k8ify.singleton: true`  | Volume is only created once per environment instead of once per `$ref` per environment  |
+| `k8ify.shared: true` | Instead of `ReadWriteOnce`, create a `ReadWriteMany` volume; Services with multiple replicas will all share the same volume  |
 
 #### Health Checks
 

@@ -1,9 +1,12 @@
 package util
 
 import (
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var (
@@ -52,4 +55,52 @@ func ConfigGetInt32(config map[string]string, key string, defaultValue int32) in
 // cases.
 func IsTruthy(s string) bool {
 	return reTrue.MatchString(s)
+}
+
+func GetBoolean(labels map[string]string, key string) bool {
+	if val, ok := labels[key]; ok {
+		return IsTruthy(val)
+	}
+
+	return false
+}
+
+func GetOptional(labels map[string]string, key string) *string {
+	if val, ok := labels[key]; ok {
+		return &val
+	}
+
+	return nil
+}
+
+// IsSingleton determine whether a resource (according to its labels) should be
+// treated as a singleton.
+func IsSingleton(labels map[string]string) bool {
+	return GetBoolean(labels, "k8ify.singleton")
+}
+
+// IsShared determines whether a volume is shared between replicas
+func IsShared(labels map[string]string) bool {
+	return GetBoolean(labels, "k8ify.shared")
+}
+
+// StorageClass determines a storage class from a set of labels
+func StorageClass(labels map[string]string) *string {
+	return GetOptional(labels, "k8ify.storage-class")
+}
+
+// StorageSize determines the requested storage size for a volume, or a
+// fallback value.
+func StorageSize(labels map[string]string, fallback string) resource.Quantity {
+	quantity := fallback
+	if q, ok := labels["k8ify.size"]; ok {
+		quantity = q
+	}
+
+	size, err := resource.ParseQuantity(quantity)
+	if err != nil {
+		log.Fatalf("ERROR: Invalid storage size: %q\n", quantity)
+	}
+
+	return size
 }
