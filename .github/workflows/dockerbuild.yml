@@ -1,0 +1,31 @@
+name: 'Docker Build'
+
+on:
+  workflow_run:
+    workflows: ["Go"]
+    types:
+      - completed
+    tags:
+      - '**'
+
+env:
+  latest_tag: "${{ github.ref_type == 'tag' && ',docker.io/vshn/k8ify:latest' || '' }}"
+
+jobs:
+  dockerbuild:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} # GitHub will trigger this job no matter if 'Go' succeeded or failed, thus we need to check here
+    steps:
+      - uses: actions/checkout@v3
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Docker build
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: "docker.io/vshn/k8ify:${{ github.ref_name }}${{ env.latest_tag }}"
