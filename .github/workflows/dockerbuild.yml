@@ -1,12 +1,11 @@
 name: 'Docker Build'
 
 on:
-  workflow_run:
-    workflows: ["Go"]
-    types:
-      - completed
+  push:
     tags:
       - '**'
+#    branches:
+#      - 'yourbranch' # may be useful for testing
 
 env:
   latest_tag: "${{ github.ref_type == 'tag' && ',docker.io/vshn/k8ify:latest' || '' }}"
@@ -14,7 +13,6 @@ env:
 jobs:
   dockerbuild:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }} # GitHub will trigger this job no matter if 'Go' succeeded or failed, thus we need to check here
     steps:
       - uses: actions/checkout@v3
       - name: Login to DockerHub
@@ -27,5 +25,6 @@ jobs:
       - name: Docker build
         uses: docker/build-push-action@v4
         with:
+          build-args: BUILDKIT_CONTEXT_KEEP_GIT_DIR=true # Without this the .git directory is not present and our tests fail
           push: true
           tags: "docker.io/vshn/k8ify:${{ github.ref_name }}${{ env.latest_tag }}"

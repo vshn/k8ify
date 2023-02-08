@@ -7,7 +7,7 @@ WORKDIR ${HOME}
 
 COPY . ${HOME}
 
-RUN go build -v .
+RUN make test && go build -v .
 
 # Runtime
 FROM docker.io/appuio/oc:v4.11
