@@ -3,27 +3,28 @@ kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
-    k8ify.ref-slug: mpi
+    k8ify.ref-slug: oasp
     k8ify.service: nginx
-  name: nginx-mpi
+  name: nginx-oasp
 spec:
+  replicas: 3
   selector:
     matchLabels:
-      k8ify.ref-slug: mpi
+      k8ify.ref-slug: oasp
       k8ify.service: nginx
   strategy:
-    type: Recreate
+    type: RollingUpdate
   template:
     metadata:
       creationTimestamp: null
       labels:
-        k8ify.ref-slug: mpi
+        k8ify.ref-slug: oasp
         k8ify.service: nginx
     spec:
       containers:
       - envFrom:
         - secretRef:
-            name: nginx-mpi-env
+            name: nginx-oasp-env
         image: docker.io/library/nginx
         imagePullPolicy: Always
         livenessProbe:
@@ -33,7 +34,7 @@ spec:
           tcpSocket:
             port: 80
           timeoutSeconds: 60
-        name: nginx-mpi
+        name: nginx-oasp
         ports:
         - containerPort: 80
         resources: {}

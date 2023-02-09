@@ -503,7 +503,7 @@ func toRefSlug(ref string, composeService composeTypes.ServiceConfig) string {
 }
 
 func ComposeServiceToK8s(ref string, composeService composeTypes.ServiceConfig) Objects {
-	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 3), composeService)
+	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 4), composeService)
 	labels := make(map[string]string)
 	labels["k8ify.service"] = composeService.Name
 	if refSlug != "" {

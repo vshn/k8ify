@@ -4,9 +4,9 @@ kind: PersistentVolumeClaim
 metadata:
   creationTimestamp: null
   labels:
-    k8ify.ref-slug: mpi
+    k8ify.ref-slug: oasp
     k8ify.service: portal
-  name: portal-mpi-claim0
+  name: portal-oasp-claim0
 spec:
   accessModes:
   - ReadWriteMany

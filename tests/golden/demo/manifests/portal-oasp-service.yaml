@@ -4,9 +4,9 @@ kind: Service
 metadata:
   creationTimestamp: null
   labels:
-    k8ify.ref-slug: mpi
+    k8ify.ref-slug: oasp
     k8ify.service: portal
-  name: portal-mpi
+  name: portal-oasp
 spec:
   ports:
   - name: "8001"
@@ -16,7 +16,7 @@ spec:
     port: 9001
     targetPort: 9000
   selector:
-    k8ify.ref-slug: mpi
+    k8ify.ref-slug: oasp
     k8ify.service: portal
 status:
   loadBalancer: {}

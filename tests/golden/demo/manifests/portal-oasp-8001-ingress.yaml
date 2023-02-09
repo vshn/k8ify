@@ -6,9 +6,9 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-production
   creationTimestamp: null
   labels:
-    k8ify.ref-slug: mpi
+    k8ify.ref-slug: oasp
     k8ify.service: portal
-  name: portal-mpi-8001
+  name: portal-oasp-8001
 spec:
   rules:
   - host: portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud
@@ -16,7 +16,7 @@ spec:
       paths:
       - backend:
           service:
-            name: portal-mpi
+            name: portal-oasp
             port:
               number: 8001
         path: /
@@ -24,6 +24,6 @@ spec:
   tls:
   - hosts:
     - portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud
-    secretName: portal-mpi-8001-tls
+    secretName: portal-oasp-8001-tls
 status:
   loadBalancer: {}
