@@ -4,16 +4,16 @@ kind: Service
 metadata:
   creationTimestamp: null
   labels:
-    k8ify.ref-slug: mpi
+    k8ify.ref-slug: oasp
     k8ify.service: nginx
-  name: nginx-mpi
+  name: nginx-oasp
 spec:
   ports:
   - name: "8080"
     port: 8080
     targetPort: 80
   selector:
-    k8ify.ref-slug: mpi
+    k8ify.ref-slug: oasp
     k8ify.service: nginx
 status:
   loadBalancer: {}

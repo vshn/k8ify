@@ -3,14 +3,14 @@ kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
-    k8ify.ref-slug: mpi
+    k8ify.ref-slug: oasp
     k8ify.service: portal
-  name: portal-mpi
+  name: portal-oasp
 spec:
   replicas: 2
   selector:
     matchLabels:
-      k8ify.ref-slug: mpi
+      k8ify.ref-slug: oasp
       k8ify.service: portal
   strategy:
     type: Recreate
@@ -18,7 +18,7 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        k8ify.ref-slug: mpi
+        k8ify.ref-slug: oasp
         k8ify.service: portal
     spec:
       containers:
@@ -29,7 +29,7 @@ spec:
         - echo
         envFrom:
         - secretRef:
-            name: portal-mpi-env
+            name: portal-oasp-env
         image: image-registry.openshift-image-registry.svc:5000/portal/portal:latest
         imagePullPolicy: Always
         livenessProbe:
@@ -41,7 +41,7 @@ spec:
           periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 60
-        name: portal-mpi
+        name: portal-oasp
         ports:
         - containerPort: 8000
         - containerPort: 9000
@@ -73,10 +73,10 @@ spec:
           timeoutSeconds: 60
         volumeMounts:
         - mountPath: /src
-          name: portal-mpi-claim0
+          name: portal-oasp-claim0
       restartPolicy: Always
       volumes:
-      - name: portal-mpi-claim0
+      - name: portal-oasp-claim0
         persistentVolumeClaim:
-          claimName: portal-mpi-claim0
+          claimName: portal-oasp-claim0
 status: {}
