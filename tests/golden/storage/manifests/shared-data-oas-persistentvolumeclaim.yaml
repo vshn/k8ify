@@ -12,5 +12,5 @@ spec:
   - ReadWriteMany
   resources:
     requests:
-      storage: 1G
+      storage: 1Gi
 status: {}

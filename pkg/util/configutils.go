@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/docker/go-units"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -101,10 +102,10 @@ func StorageSize(labels map[string]string, fallback string) resource.Quantity {
 		quantity = *q
 	}
 
-	size, err := resource.ParseQuantity(quantity)
+	size, err := units.RAMInBytes(quantity)
 	if err != nil {
 		log.Fatalf("ERROR: Invalid storage size: %q\n", quantity)
 	}
 
-	return size
+	return *resource.NewQuantity(size, resource.BinarySI)
 }
