@@ -61,6 +61,11 @@ func VolumesPrecheck(inputs *ir.Inputs) {
 	}
 
 	for name, volume := range inputs.Volumes {
+		// CHECK: No size defined
+		if volume.SizeIsMissing() {
+			logRed(fmt.Sprintf("WARNING: Volume %q has no size specified!", name))
+		}
+
 		// CHECK: Volume defined but not used in any services
 		if len(references[name]) < 1 {
 			logRed(fmt.Sprintf("WARNING: Volume %q is defined but not referenced by any workloads", name))

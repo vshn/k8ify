@@ -98,7 +98,7 @@ Volume Labels
 
 | Label  | Effect  |
 | ------ | ------- |
-| `k8ify.size: 10Gi`  | Requested volume size. Defaults to `100Mi`.  |
+| `k8ify.size: 10G`  | Requested volume size. Defaults to `1G`.  |
 | `k8ify.singleton: true`  | Volume is only created once per environment instead of once per `$ref` per environment  |
 | `k8ify.shared: true` | Instead of `ReadWriteOnce`, create a `ReadWriteMany` volume; Services with multiple replicas will all share the same volume  |
 

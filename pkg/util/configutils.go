@@ -89,12 +89,16 @@ func StorageClass(labels map[string]string) *string {
 	return GetOptional(labels, "k8ify.storage-class")
 }
 
+func StorageSizeRaw(labels map[string]string) *string {
+	return GetOptional(labels, "k8ify.size")
+}
+
 // StorageSize determines the requested storage size for a volume, or a
 // fallback value.
 func StorageSize(labels map[string]string, fallback string) resource.Quantity {
 	quantity := fallback
-	if q, ok := labels["k8ify.size"]; ok {
-		quantity = q
+	if q := StorageSizeRaw(labels); q != nil {
+		quantity = *q
 	}
 
 	size, err := resource.ParseQuantity(quantity)

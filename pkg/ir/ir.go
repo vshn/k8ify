@@ -118,3 +118,6 @@ func (v *Volume) Labels() map[string]string {
 func (v *Volume) Size(fallback string) resource.Quantity {
 	return util.StorageSize(v.raw.Labels, fallback)
 }
+func (v *Volume) SizeIsMissing() bool {
+	return util.StorageSizeRaw(v.raw.Labels) == nil
+}
