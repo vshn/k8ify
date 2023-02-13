@@ -3,9 +3,9 @@ package converter
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	composeTypes "github.com/compose-spec/compose-go/types"
+	"github.com/vshn/k8ify/pkg/ir"
 	"github.com/vshn/k8ify/pkg/util"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -16,57 +16,39 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-func composeServiceStorageToK8s() map[core.ResourceName]resource.Quantity {
-	quantity := make(map[core.ResourceName]resource.Quantity)
-	quantity["storage"], _ = resource.ParseQuantity("100Mi")
-	return quantity
-}
-
 func composeServiceVolumesToK8s(
-	serviceName string,
-	serviceVolumes []composeTypes.ServiceVolumeConfig,
-	labels map[string]string,
-	accessMode core.PersistentVolumeAccessMode,
-) ([]core.Volume, []core.VolumeMount, []core.PersistentVolumeClaim) {
+	refSlug string,
+	mounts []composeTypes.ServiceVolumeConfig,
+	projectVolumes map[string]ir.Volume,
+) ([]core.Volume, []core.VolumeMount) {
 
 	volumeMounts := []core.VolumeMount{}
 	volumes := []core.Volume{}
-	persistentVolumeClaims := []core.PersistentVolumeClaim{}
-	for i, volume := range serviceVolumes {
-		name := util.Sanitize(volume.Source)
-		if len(name) == 0 || strings.HasPrefix(name, "claim") {
-			name = fmt.Sprintf("%s-claim%d", serviceName, i)
+
+	for _, mount := range mounts {
+		if mount.Type != "volume" {
+			continue
 		}
+		name := util.Sanitize(mount.Source)
+
 		volumeMounts = append(volumeMounts, core.VolumeMount{
-			MountPath: volume.Target,
+			MountPath: mount.Target,
 			Name:      name,
 		})
-		volumes = append(volumes, core.Volume{
-			Name: name,
-			VolumeSource: core.VolumeSource{
-				PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-					ClaimName: name,
+
+		volume := projectVolumes[mount.Source]
+		if volume.IsShared() {
+			volumes = append(volumes, core.Volume{
+				Name: name,
+				VolumeSource: core.VolumeSource{
+					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+						ClaimName: mount.Source + refSlug,
+					},
 				},
-			},
-		})
-		persistentVolumeClaims = append(persistentVolumeClaims, core.PersistentVolumeClaim{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "PersistentVolumeClaim",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:   name,
-				Labels: labels,
-			},
-			Spec: core.PersistentVolumeClaimSpec{
-				AccessModes: []core.PersistentVolumeAccessMode{accessMode},
-				Resources: core.ResourceRequirements{
-					Requests: composeServiceStorageToK8s(),
-				},
-			},
-		})
+			})
+		}
 	}
-	return volumes, volumeMounts, persistentVolumeClaims
+	return volumes, volumeMounts
 }
 
 func composeServicePortsToK8s(composeServicePorts []composeTypes.ServicePortConfig) ([]core.ContainerPort, []core.ServicePort) {
@@ -490,26 +472,28 @@ func composeServiceToResourceRequirements(composeService composeTypes.ServiceCon
 	return resources
 }
 
-func toRefSlug(ref string, composeService composeTypes.ServiceConfig) string {
-	if ref == "" {
+func toRefSlug(ref string, resource WithLabels) string {
+	if ref == "" || util.IsSingleton(resource.Labels()) {
 		return ""
 	}
-	if singleton, ok := composeService.Labels["k8ify.singleton"]; ok {
-		if util.IsTruthy(singleton) {
-			return ""
-		}
-	}
+
 	return ref
 }
 
-func ComposeServiceToK8s(ref string, composeService composeTypes.ServiceConfig) Objects {
-	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 4), composeService)
+type WithLabels interface {
+	Labels() map[string]string
+}
+
+func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[string]ir.Volume) Objects {
+	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 4), workload)
 	labels := make(map[string]string)
-	labels["k8ify.service"] = composeService.Name
+	labels["k8ify.service"] = workload.Name
 	if refSlug != "" {
 		labels["k8ify.ref-slug"] = refSlug
 		refSlug = "-" + refSlug
 	}
+
+	composeService := workload.AsCompose()
 
 	objects := Objects{}
 
@@ -520,17 +504,29 @@ func ComposeServiceToK8s(ref string, composeService composeTypes.ServiceConfig) 
 	service := composeServiceToService(refSlug, composeService, servicePorts, labels)
 	objects.Services = []core.Service{service}
 
-	shareStorage := util.IsTruthy(composeService.Labels["k8ify.share-storage"])
-	accessMode := core.ReadWriteOnce
-	if shareStorage {
-		accessMode = core.ReadWriteMany
-	}
-	volumes, volumeMounts, persistentVolumeClaims := composeServiceVolumesToK8s(
-		composeService.Name+refSlug, composeService.Volumes, labels, accessMode,
+	volumes, volumeMounts := composeServiceVolumesToK8s(
+		refSlug, composeService.Volumes, projectVolumes,
 	)
 
-	if shareStorage || len(volumeMounts) < 1 {
-		objects.PersistentVolumeClaims = persistentVolumeClaims
+	rwoVolumes := workload.RwoVolumes(projectVolumes)
+	if len(rwoVolumes) > 0 {
+		pvcs := []core.PersistentVolumeClaim{}
+		for _, vol := range rwoVolumes {
+			pvcs = append(pvcs, composeVolumeToPvc(vol.Name, labels, &vol))
+		}
+
+		statefulset := composeServiceToStatefulSet(
+			refSlug,
+			composeService,
+			containerPorts,
+			volumes,
+			volumeMounts,
+			pvcs,
+			secret.Name,
+			labels,
+		)
+		objects.StatefulSets = []apps.StatefulSet{statefulset}
+	} else {
 		deployment := composeServiceToDeployment(refSlug,
 			composeService,
 			containerPorts,
@@ -541,26 +537,58 @@ func ComposeServiceToK8s(ref string, composeService composeTypes.ServiceConfig) 
 		)
 		objects.Deployments = []apps.Deployment{deployment}
 
-	} else {
-		// StatefulSets create their own PVC's via `spec.volumeTemplate`, so we don't include the PVC objects here
-		statefulset := composeServiceToStatefulSet(
-			refSlug,
-			composeService,
-			containerPorts,
-			volumes,
-			volumeMounts,
-			persistentVolumeClaims,
-			secret.Name,
-			labels,
-		)
-		objects.StatefulSets = []apps.StatefulSet{statefulset}
-
 	}
 
 	ingresses := composeServiceToIngress(refSlug, composeService, service, labels)
 	objects.Ingresses = ingresses
 
 	return objects
+}
+
+func ComposeVolumeToK8s(ref string, volume *ir.Volume) *core.PersistentVolumeClaim {
+	if !volume.IsShared() {
+		// RWO volume; nothing to do
+		return nil
+	}
+
+	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 3), volume)
+	labels := make(map[string]string)
+	labels["k8ify.volume"] = volume.Name
+	if refSlug != "" {
+		labels["k8ify.ref-slug"] = refSlug
+		refSlug = "-" + refSlug
+	}
+	name := volume.Name + refSlug
+	pvc := composeVolumeToPvc(name, labels, volume)
+
+	return &pvc
+}
+
+func composeVolumeToPvc(name string, labels map[string]string, volume *ir.Volume) core.PersistentVolumeClaim {
+	name = util.Sanitize(name)
+	accessMode := core.ReadWriteOnce
+	if volume.IsShared() {
+		accessMode = core.ReadWriteMany
+	}
+
+	return core.PersistentVolumeClaim{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "PersistentVolumeClaim",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+		Spec: core.PersistentVolumeClaimSpec{
+			AccessModes: []core.PersistentVolumeAccessMode{accessMode},
+			Resources: core.ResourceRequirements{
+				Requests: core.ResourceList{
+					"storage": volume.Size("1G"),
+				},
+			},
+		},
+	}
 }
 
 // Objects combines all possible resources the conversion process could produce

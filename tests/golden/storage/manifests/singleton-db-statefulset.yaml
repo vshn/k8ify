@@ -1,0 +1,50 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.service: singleton-db
+  name: singleton-db
+spec:
+  selector:
+    matchLabels:
+      k8ify.service: singleton-db
+  serviceName: ""
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.service: singleton-db
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: singleton-db-env
+        image: nginx
+        imagePullPolicy: Always
+        name: singleton-db
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: singleton-db-storage
+      restartPolicy: Always
+  updateStrategy: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.service: singleton-db
+      name: singleton-db-storage
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+    status: {}
+status:
+  availableReplicas: 0
+  replicas: 0

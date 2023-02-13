@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"time"
+
 	composeLoader "github.com/compose-spec/compose-go/loader"
 	composeTypes "github.com/compose-spec/compose-go/types"
 	"github.com/spf13/pflag"
 	"github.com/vshn/k8ify/internal"
 	"github.com/vshn/k8ify/pkg/converter"
+	"github.com/vshn/k8ify/pkg/ir"
 	"github.com/vshn/k8ify/pkg/util"
-	"log"
-	"os"
-	"time"
 )
 
 var (
@@ -67,11 +69,19 @@ func Main(args []string) int {
 		return 1
 	}
 
-	objects := converter.Objects{}
+	inputs := ir.FromCompose(project)
+	internal.VolumesPrecheck(inputs)
 
-	for _, composeService := range project.Services {
-		internal.ComposeServicePrecheck(composeService)
-		objects = objects.Append(converter.ComposeServiceToK8s(config.Ref, composeService))
+	objects := converter.Objects{}
+	for _, volume := range inputs.Volumes {
+		if v := converter.ComposeVolumeToK8s(config.Ref, &volume); v != nil {
+			objects.PersistentVolumeClaims = append(objects.PersistentVolumeClaims, *v)
+		}
+	}
+
+	for _, service := range inputs.Services {
+		internal.ComposeServicePrecheck(service.AsCompose())
+		objects = objects.Append(converter.ComposeServiceToK8s(config.Ref, &service, inputs.Volumes))
 	}
 
 	converter.PatchIngresses(objects.Ingresses, config.IngressPatch)

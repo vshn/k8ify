@@ -50,10 +50,6 @@ spec:
         - mountPath: /data/db
           name: mongodb-data
       restartPolicy: Always
-      volumes:
-      - name: mongodb-data
-        persistentVolumeClaim:
-          claimName: mongodb-data
   updateStrategy: {}
   volumeClaimTemplates:
   - apiVersion: v1
@@ -68,7 +64,7 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: 100Mi
+          storage: 1Gi
     status: {}
 status:
   availableReplicas: 0
