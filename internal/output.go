@@ -32,11 +32,12 @@ func prepareOutputDir(outputDir string) error {
 	return nil
 }
 
-func writeManifest(yp *printers.YAMLPrinter, obj runtime.Object, destination string) error {
+func writeManifest(obj runtime.Object, destination string) error {
 	f, err := os.Create(destination)
 	if err != nil {
 		return err
 	}
+	yp := printers.YAMLPrinter{}
 	err = yp.PrintObj(obj, f)
 	if err != nil {
 		return err
@@ -55,10 +56,8 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 		os.Exit(1)
 	}
 
-	yp := printers.YAMLPrinter{}
-
 	for _, deployment := range objects.Deployments {
-		err := writeManifest(&yp, &deployment, outputDir+"/"+deployment.Name+"-deployment.yaml")
+		err := writeManifest(&deployment, outputDir+"/"+deployment.Name+"-deployment.yaml")
 		if err != nil {
 			return err
 		}
@@ -66,7 +65,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	log.Printf("wrote %d deployments\n", len(objects.Deployments))
 
 	for _, statefulset := range objects.StatefulSets {
-		err := writeManifest(&yp, &statefulset, outputDir+"/"+statefulset.Name+"-statefulset.yaml")
+		err := writeManifest(&statefulset, outputDir+"/"+statefulset.Name+"-statefulset.yaml")
 		if err != nil {
 			return err
 		}
@@ -74,7 +73,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	log.Printf("wrote %d statefulsets\n", len(objects.StatefulSets))
 
 	for _, service := range objects.Services {
-		err := writeManifest(&yp, &service, outputDir+"/"+service.Name+"-service.yaml")
+		err := writeManifest(&service, outputDir+"/"+service.Name+"-service.yaml")
 		if err != nil {
 			return err
 		}
@@ -82,7 +81,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	log.Printf("wrote %d services\n", len(objects.Services))
 
 	for _, persistentVolumeClaim := range objects.PersistentVolumeClaims {
-		err := writeManifest(&yp, &persistentVolumeClaim, outputDir+"/"+persistentVolumeClaim.Name+"-persistentvolumeclaim.yaml")
+		err := writeManifest(&persistentVolumeClaim, outputDir+"/"+persistentVolumeClaim.Name+"-persistentvolumeclaim.yaml")
 		if err != nil {
 			return err
 		}
@@ -90,7 +89,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	log.Printf("wrote %d persistentVolumeClaims\n", len(objects.PersistentVolumeClaims))
 
 	for _, secret := range objects.Secrets {
-		err := writeManifest(&yp, &secret, outputDir+"/"+secret.Name+"-secret.yaml")
+		err := writeManifest(&secret, outputDir+"/"+secret.Name+"-secret.yaml")
 		if err != nil {
 			return err
 		}
@@ -98,7 +97,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	log.Printf("wrote %d secrets\n", len(objects.Secrets))
 
 	for _, ingress := range objects.Ingresses {
-		err := writeManifest(&yp, &ingress, outputDir+"/"+ingress.Name+"-ingress.yaml")
+		err := writeManifest(&ingress, outputDir+"/"+ingress.Name+"-ingress.yaml")
 		if err != nil {
 			return err
 		}
