@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"time"
@@ -23,10 +24,12 @@ var (
 		IngressPatch: converter.IngressPatch{},
 	}
 	modifiedImages internal.ModifiedImagesFlag
+	shellEnvFiles  internal.ShellEnvFilesFlag
 )
 
 func main() {
 	pflag.Var(&modifiedImages, "modified-image", "Image that has been modified during the build. Can be repeated.")
+	pflag.Var(&shellEnvFiles, "shell-env-file", "Shell environment file ('key=value' format) to be used in addition to the current shell environment. Can be repeated.")
 	code := Main(os.Args)
 	os.Exit(code)
 }
@@ -49,6 +52,16 @@ func Main(args []string) int {
 
 	if config.ConfigFiles == nil || len(config.ConfigFiles) == 0 {
 		config.ConfigFiles = []string{"compose.yml", "docker-compose.yml", "compose-" + config.Env + ".yml", "docker-compose-" + config.Env + ".yml"}
+	}
+
+	// Load the additional shell environment files. This will merge everything into the existing shell environment and
+	// all values can later be retrieved using os.Environ()
+	for _, shellEnvFile := range shellEnvFiles.Values {
+		err := godotenv.Load(shellEnvFile)
+		if err != nil {
+			log.Println(err)
+			return 1
+		}
 	}
 
 	composeConfigFiles := []composeTypes.ConfigFile{}

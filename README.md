@@ -44,6 +44,7 @@ This results in flexibility to support various modes of deployment, be it plain 
 - Argument #1: `environment`. Optional.
 - Argument #2: `ref`. Optional.
 - `--modified-image [IMAGE]`: IMAGE has changed. Optional, repeatable.
+- `--shell-env-file [FILENAME]`: Load additional shell environment variables from file. Optional, repeatable.
 
 #### `environment`
 
@@ -78,6 +79,12 @@ However, if the image tag stays the same (which is often the case for test branc
 To work around this problem k8ify can introduce a dummy change to the Deployment/ReplicaSet to force the roll-out. In order to identify which Deployments/ReplicaSets need this dummy change, you can tell k8ify which images have been rebuilt and k8ify will automatically find the relevant Deployments/ReplicaSets.
 
 This parameter is generally set by the CI/CD pipeline, because the pipeline knows which images it has generated in earlier steps. The image should be specified as `$SERVICE:$TAG` or `$NAMESPACE/$SERVICE:$TAG`, depending on how specific you need to be. You can repeat this parameter for any number of images.
+
+#### `--shell-env-file [FILENAME]` - Load additional shell environment variables from file
+
+k8ify relies on the shell environment to fill placeholders in the compose files. This argument can be used to load additional variables. The files have the usual "KEY=VALUE" format and they support quoted values. 
+
+A use case could be to protect your secrets. Instead of loading them into the shell environment you could put them into a file and use this argument to load said file.
 
 
 ### Labels
