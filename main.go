@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"plugin"
 	"time"
 
 	composeLoader "github.com/compose-spec/compose-go/loader"
@@ -25,13 +26,33 @@ var (
 	}
 	modifiedImages internal.ModifiedImagesFlag
 	shellEnvFiles  internal.ShellEnvFilesFlag
+	convPlugin     ConverterPlugin
 )
 
 func main() {
 	pflag.Var(&modifiedImages, "modified-image", "Image that has been modified during the build. Can be repeated.")
 	pflag.Var(&shellEnvFiles, "shell-env-file", "Shell environment file ('key=value' format) to be used in addition to the current shell environment. Can be repeated.")
+
+	plug, err := plugin.Open("plugins/plugins.so")
+	if err != nil {
+		log.Fatal("plugin plugins/plugins.so could not be loaded")
+	}
+	convPluginSymbol, err := plug.Lookup("ConverterPlugin")
+	if err != nil {
+		log.Fatal("plugin plugins/plugins.so does not have symbol ConverterPlugin")
+	}
+	var ok bool
+	convPlugin, ok = convPluginSymbol.(ConverterPlugin)
+	if !ok {
+		log.Fatal("plugin plugins/plugins.so symbol ConverterPlugin has wrong type")
+	}
+
 	code := Main(os.Args)
 	os.Exit(code)
+}
+
+type ConverterPlugin interface {
+	ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[string]ir.Volume) (converter.Objects, bool)
 }
 
 func Main(args []string) int {
@@ -94,7 +115,11 @@ func Main(args []string) int {
 
 	for _, service := range inputs.Services {
 		internal.ComposeServicePrecheck(service.AsCompose())
-		objects = objects.Append(converter.ComposeServiceToK8s(config.Ref, &service, inputs.Volumes))
+		pluginObjects, skipDefaultConverter := convPlugin.ComposeServiceToK8s(config.Ref, &service, inputs.Volumes)
+		objects = objects.Append(pluginObjects)
+		if !skipDefaultConverter {
+			objects = objects.Append(converter.ComposeServiceToK8s(config.Ref, &service, inputs.Volumes))
+		}
 	}
 
 	converter.PatchIngresses(objects.Ingresses, config.IngressPatch)

@@ -104,5 +104,13 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	}
 	log.Printf("wrote %d ingresses\n", len(objects.Ingresses))
 
+	for _, other := range objects.Others {
+		err := writeManifest(other, outputDir+"/"+other.Name+"-other.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	log.Printf("wrote %d others\n", len(objects.Others))
+
 	return nil
 }
