@@ -33,18 +33,19 @@ func main() {
 	pflag.Var(&modifiedImages, "modified-image", "Image that has been modified during the build. Can be repeated.")
 	pflag.Var(&shellEnvFiles, "shell-env-file", "Shell environment file ('key=value' format) to be used in addition to the current shell environment. Can be repeated.")
 
-	plug, err := plugin.Open("plugins/plugins.so")
+	pluginPath := "../k8ify-plugin-appcat/k8ify-plugin-appcat.so"
+	plug, err := plugin.Open(pluginPath)
 	if err != nil {
-		log.Fatal("plugin plugins/plugins.so could not be loaded")
+		log.Fatal(fmt.Sprintf("plugin %s could not be loaded: %v", pluginPath, err))
 	}
 	convPluginSymbol, err := plug.Lookup("ConverterPlugin")
 	if err != nil {
-		log.Fatal("plugin plugins/plugins.so does not have symbol ConverterPlugin")
+		log.Fatal("plugin " + pluginPath + " does not have symbol ConverterPlugin")
 	}
 	var ok bool
 	convPlugin, ok = convPluginSymbol.(ConverterPlugin)
 	if !ok {
-		log.Fatal("plugin plugins/plugins.so symbol ConverterPlugin has wrong type")
+		log.Fatal("plugin " + pluginPath + " symbol ConverterPlugin has wrong type")
 	}
 
 	code := Main(os.Args)
