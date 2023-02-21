@@ -1,12 +1,12 @@
 package internal
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/vshn/k8ify/pkg/converter"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/printers"
 )
 
@@ -105,7 +105,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	log.Printf("wrote %d ingresses\n", len(objects.Ingresses))
 
 	for _, other := range objects.Others {
-		err := writeManifest(other, outputDir+"/"+other.Name+"-other.yaml")
+		err := writeManifest(other, outputDir+"/"+other.GetObjectMeta().GetName()+"-other.yaml")
 		if err != nil {
 			return err
 		}

@@ -2,7 +2,6 @@ package converter
 
 import (
 	"fmt"
-	"github.com/vshn/k8ify/internal"
 	"strconv"
 
 	composeTypes "github.com/compose-spec/compose-go/types"
@@ -601,7 +600,7 @@ type Objects struct {
 	PersistentVolumeClaims []core.PersistentVolumeClaim
 	Secrets                []core.Secret
 	Ingresses              []networking.Ingress
-	Others                 []internal.OtherResource
+	Others                 []OtherResource
 }
 
 func (o Objects) Append(other Objects) Objects {
