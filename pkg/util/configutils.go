@@ -1,12 +1,13 @@
 package util
 
 import (
-	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/docker/go-units"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -104,7 +105,8 @@ func StorageSize(labels map[string]string, fallback string) resource.Quantity {
 
 	size, err := units.RAMInBytes(quantity)
 	if err != nil {
-		log.Fatalf("ERROR: Invalid storage size: %q\n", quantity)
+		logrus.Errorf("ERROR: Invalid storage size: %q\n", quantity)
+		os.Exit(1)
 	}
 
 	return *resource.NewQuantity(size, resource.BinarySI)

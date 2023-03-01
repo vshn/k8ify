@@ -1,10 +1,10 @@
 package internal
 
 import (
-	"log"
 	"os"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/vshn/k8ify/pkg/converter"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -52,7 +52,7 @@ func writeManifest(obj runtime.Object, destination string) error {
 func WriteManifests(outputDir string, objects converter.Objects) error {
 	err := prepareOutputDir(outputDir)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Error(err)
 		os.Exit(1)
 	}
 
@@ -62,7 +62,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 			return err
 		}
 	}
-	log.Printf("wrote %d deployments\n", len(objects.Deployments))
+	logrus.Infof("wrote %d deployments\n", len(objects.Deployments))
 
 	for _, statefulset := range objects.StatefulSets {
 		err := writeManifest(&statefulset, outputDir+"/"+statefulset.Name+"-statefulset.yaml")
@@ -70,7 +70,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 			return err
 		}
 	}
-	log.Printf("wrote %d statefulsets\n", len(objects.StatefulSets))
+	logrus.Infof("wrote %d statefulsets\n", len(objects.StatefulSets))
 
 	for _, service := range objects.Services {
 		err := writeManifest(&service, outputDir+"/"+service.Name+"-service.yaml")
@@ -78,7 +78,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 			return err
 		}
 	}
-	log.Printf("wrote %d services\n", len(objects.Services))
+	logrus.Infof("wrote %d services\n", len(objects.Services))
 
 	for _, persistentVolumeClaim := range objects.PersistentVolumeClaims {
 		err := writeManifest(&persistentVolumeClaim, outputDir+"/"+persistentVolumeClaim.Name+"-persistentvolumeclaim.yaml")
@@ -86,7 +86,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 			return err
 		}
 	}
-	log.Printf("wrote %d persistentVolumeClaims\n", len(objects.PersistentVolumeClaims))
+	logrus.Infof("wrote %d persistentVolumeClaims\n", len(objects.PersistentVolumeClaims))
 
 	for _, secret := range objects.Secrets {
 		err := writeManifest(&secret, outputDir+"/"+secret.Name+"-secret.yaml")
@@ -94,7 +94,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 			return err
 		}
 	}
-	log.Printf("wrote %d secrets\n", len(objects.Secrets))
+	logrus.Infof("wrote %d secrets\n", len(objects.Secrets))
 
 	for _, ingress := range objects.Ingresses {
 		err := writeManifest(&ingress, outputDir+"/"+ingress.Name+"-ingress.yaml")
@@ -102,7 +102,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 			return err
 		}
 	}
-	log.Printf("wrote %d ingresses\n", len(objects.Ingresses))
+	logrus.Infof("wrote %d ingresses\n", len(objects.Ingresses))
 
 	return nil
 }

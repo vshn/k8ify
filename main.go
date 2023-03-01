@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
-	"log"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 
 	composeLoader "github.com/compose-spec/compose-go/loader"
 	composeTypes "github.com/compose-spec/compose-go/types"
@@ -37,7 +38,7 @@ func main() {
 func Main(args []string) int {
 	err := pflag.CommandLine.Parse(args[1:])
 	if err != nil {
-		log.Println(err)
+		logrus.Error(err)
 		return 1
 	}
 	plainArgs := pflag.Args()
@@ -59,7 +60,7 @@ func Main(args []string) int {
 	for _, shellEnvFile := range shellEnvFiles.Values {
 		err := godotenv.Load(shellEnvFile)
 		if err != nil {
-			log.Println(err)
+			logrus.Error(err)
 			return 1
 		}
 	}
@@ -78,7 +79,7 @@ func Main(args []string) int {
 	}
 	project, err := composeLoader.Load(configDetails)
 	if err != nil {
-		log.Println(err)
+		logrus.Error(err)
 		return 1
 	}
 
@@ -105,7 +106,7 @@ func Main(args []string) int {
 
 	err = internal.WriteManifests(config.OutputDir, objects)
 	if err != nil {
-		log.Println(err)
+		logrus.Error(err)
 		return 1
 	}
 
