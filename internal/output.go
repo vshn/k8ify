@@ -104,5 +104,13 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	}
 	logrus.Infof("wrote %d ingresses\n", len(objects.Ingresses))
 
+	for _, other := range objects.Others {
+		err := writeManifest(&other, outputDir+"/"+other.GetName()+"-"+strings.ToLower(other.GetObjectKind().GroupVersionKind().Kind)+".yaml")
+		if err != nil {
+			return err
+		}
+	}
+	logrus.Infof("wrote %d other objects\n", len(objects.Others))
+
 	return nil
 }

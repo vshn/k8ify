@@ -1,0 +1,11 @@
+version: '3.4'
+services:
+  mongo:
+    image: mongo:4
+    volumes:
+      - mongo-data:/var/lib/mongodb
+    
+volumes:
+  mongo-data:
+    labels:
+      k8ify.shared: true
