@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -10,6 +11,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,6 +30,10 @@ type Instance struct {
 type Environment struct {
 	Refs []string          `yaml:"refs"`
 	Vars map[string]string `yaml:"vars"`
+}
+
+func init() {
+	logrus.SetOutput(io.Discard)
 }
 
 // GetRefs returns the list of refs defined in the test spec, or just an empty
