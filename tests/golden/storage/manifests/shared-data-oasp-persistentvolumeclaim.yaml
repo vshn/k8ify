@@ -3,9 +3,9 @@ kind: PersistentVolumeClaim
 metadata:
   creationTimestamp: null
   labels:
-    k8ify.ref-slug: oas
+    k8ify.ref-slug: oasp
     k8ify.volume: shared-data
-  name: shared-data-oas
+  name: shared-data-oasp
 spec:
   accessModes:
   - ReadWriteMany
