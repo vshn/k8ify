@@ -551,7 +551,7 @@ func ComposeVolumeToK8s(ref string, volume *ir.Volume) *core.PersistentVolumeCla
 		return nil
 	}
 
-	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 3), volume)
+	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 4), volume)
 	labels := make(map[string]string)
 	labels["k8ify.volume"] = volume.Name
 	if refSlug != "" {
