@@ -5,8 +5,6 @@ services:
       - default-data:/data
 
   default-shared:
-    labels:
-      k8ify.share-storage: true
     image: nginx
     volumes:
       - default-shared-data:/data
