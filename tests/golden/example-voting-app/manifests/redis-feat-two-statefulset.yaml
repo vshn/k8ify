@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: feat-two
+    k8ify.service: redis
+  name: redis-feat-two
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8ify.ref-slug: feat-two
+      k8ify.service: redis
+  serviceName: ""
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: feat-two
+        k8ify.service: redis
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: redis-feat-two-env
+        image: docker.io/library/redis:alpine
+        name: redis-feat-two
+        resources: {}
+        volumeMounts:
+        - mountPath: /healthchecks
+          name: healthchecks
+      restartPolicy: Always
+      volumes:
+      - name: healthchecks
+        persistentVolumeClaim:
+          claimName: healthchecks
+  updateStrategy: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: feat-two
+        k8ify.service: redis
+      name: healthchecks
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Mi
+    status: {}
+status:
+  availableReplicas: 0
+  replicas: 0

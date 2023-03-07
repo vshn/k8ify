@@ -1,0 +1,7 @@
+---
+environments:
+  prod: {}
+  test:
+    refs:
+      - feat/one
+      - feat/two
