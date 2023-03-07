@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -102,8 +103,10 @@ func testEnvironment(t *testing.T, envName string, env Environment) {
 		t.Run(ref, func(t *testing.T) {
 			args := []string{"k8ify", envName, ref}
 			fmt.Printf("Running %v", args)
+			var logs bytes.Buffer
+			logrus.SetOutput(&logs)
 			if c := Main(args); c != 0 {
-				t.Errorf("k8ify exited with code %v while compiling with args %v", c, args)
+				t.Errorf("k8ify exited with code %v while compiling with args '%v'\n%s", c, args, logs.String())
 			}
 
 			cmd := exec.Command("git", "diff", "--exit-code", "--minimal", "--", "manifests/")
