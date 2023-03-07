@@ -1,0 +1,7 @@
+services:
+  fooBar:
+    image: foo
+    environment:
+      - FOO
+      - BAR=${BAR}
+      - something_else=${BAZ}
