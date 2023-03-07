@@ -105,7 +105,7 @@ func StorageSize(labels map[string]string, fallback string) resource.Quantity {
 
 	size, err := units.RAMInBytes(quantity)
 	if err != nil {
-		logrus.Errorf("ERROR: Invalid storage size: %q\n", quantity)
+		logrus.Errorf("Invalid storage size: %q\n", quantity)
 		os.Exit(1)
 	}
 
