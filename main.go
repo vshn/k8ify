@@ -87,11 +87,6 @@ func Main(args []string) int {
 	internal.VolumesPrecheck(inputs)
 
 	objects := converter.Objects{}
-	for _, volume := range inputs.Volumes {
-		if v := converter.ComposeVolumeToK8s(config.Ref, &volume); v != nil {
-			objects.PersistentVolumeClaims = append(objects.PersistentVolumeClaims, *v)
-		}
-	}
 
 	for _, service := range inputs.Services {
 		internal.ComposeServicePrecheck(service.AsCompose())

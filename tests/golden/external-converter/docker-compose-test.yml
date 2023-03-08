@@ -1,0 +1,5 @@
+services:
+  mongo:
+    labels:
+      k8ify.converter: ./managed-mongodb.sh
+      k8ify.converter.plan: xxlarge

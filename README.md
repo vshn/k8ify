@@ -100,6 +100,8 @@ Service Labels
 | `k8ify.singleton: true`  | Compose service is only deployed once per environment instead of once per `$ref` per environment  |
 | `k8ify.expose: $host`  | The first port is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
 | `k8ify.expose.$port: $host`  | The port `$port` is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
+| `k8ify.converter: $script`  | Call `$script` to convert this service into a K8s object, expecting YAML on `$script`'s stdout. Used for plugging additional functionality into k8ify. The first argument sent to `$script` is the name of the resource, after that all the parameters follow (next row) |
+| `k8ify.converter.$key: $value`  | Call `$script` with parameter `--$key $value` |
 
 Volume Labels
 

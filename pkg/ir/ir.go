@@ -71,16 +71,18 @@ func (s *Service) VolumeNames() []string {
 	return names
 }
 
-func (s *Service) RwoVolumes(volumes map[string]Volume) []Volume {
-	result := []Volume{}
+func (s *Service) Volumes(volumes map[string]Volume) ([]Volume, []Volume) {
+	rwoVolumes := []Volume{}
+	rwxVolumes := []Volume{}
 	for _, volumeName := range s.VolumeNames() {
 		volume := volumes[volumeName]
-		if !volume.IsShared() {
-			result = append(result, volume)
+		if volume.IsShared() {
+			rwxVolumes = append(rwxVolumes, volume)
+		} else {
+			rwoVolumes = append(rwoVolumes, volume)
 		}
 	}
-
-	return result
+	return rwoVolumes, rwxVolumes
 }
 
 func (s *Service) IsSingleton() bool {

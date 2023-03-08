@@ -1,0 +1,20 @@
+apiVersion: mongodb.appcat.vshn.io/v1
+kind: ManagedMongoDB
+metadata:
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: mongo
+  name: mongo-oasp
+spec:
+  parameters:
+    backup:
+      timeOfDay: "02:00:00"
+    service:
+      majorVersion: "4"
+      mongoSettings:
+        timezone: Europe/Zurich
+      zone: ch-dk-2
+    size:
+      plan: xxlarge
+  writeConnectionSecretToRef:
+    name: mongo-creds
