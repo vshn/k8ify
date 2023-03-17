@@ -1,10 +1,10 @@
-github.com/compose-spec/compose-go v1.9.0 h1:oaewhNhUP/AClVs6ytHzcjw1xwK+2EMWuvHXj6tYvRc=
-github.com/compose-spec/compose-go v1.9.0/go.mod h1:Tb5Ae2PsYN3GTqYqzl2IRbTPiJtPZZjMw8UKUvmehFk=
+github.com/compose-spec/compose-go v1.13.0 h1:HHMc1XvnHJr9LUS7fPiiQeTSmGtEp+myn7jGnXgIoXE=
+github.com/compose-spec/compose-go v1.13.0/go.mod h1:uo+YhhqDpkW9MjZNzJgOLX3MlbK6zHaBo9n8LhGDwsg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/distribution/distribution/v3 v3.0.0-20221103125252-ebfa2a0ac0a9 h1:doprs/RuXCuN864IfxC3h2qocrt158wGv3A5mcqSZQw=
-github.com/distribution/distribution/v3 v3.0.0-20221103125252-ebfa2a0ac0a9/go.mod h1:6rIc5NMSjXjjnwzWWy3HAm9gDBu+X7aCzL8VrHIKgxM=
+github.com/distribution/distribution/v3 v3.0.0-20230214150026-36d8c594d7aa h1:L9Ay/slwQ4ERSPaurC+TVkZrM0K98GNrEEo1En3e8as=
+github.com/distribution/distribution/v3 v3.0.0-20230214150026-36d8c594d7aa/go.mod h1:WHNsWjnIn2V1LYOrME7e8KxSeKunYHsxEm4am0BUtcI=
 github.com/docker/go-connections v0.4.0 h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKohAFqRJQ=
 github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
