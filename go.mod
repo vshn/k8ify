@@ -3,7 +3,7 @@ module github.com/vshn/k8ify
 go 1.18
 
 require (
-	github.com/compose-spec/compose-go v1.13.3
+	github.com/compose-spec/compose-go v1.13.4
 	github.com/docker/go-units v0.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/sirupsen/logrus v1.9.0
