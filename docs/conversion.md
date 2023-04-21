@@ -183,6 +183,8 @@ spec:
           args: ["Hello World"]
           # hard-coded
           imagePullPolicy: Always
+          # `services.$name.labels["k8ify.serviceAccountName"], not set by default
+          serviceAccountName: "myappk8saccess"
       # Values from `services.$name.volumes`, translated as the volumeMounts above
       volumes:
         - name: myapp-data
@@ -281,6 +283,8 @@ spec:
           args: ["Hello World"]
           # hard-coded
           imagePullPolicy: Always
+          # `services.$name.labels["k8ify.serviceAccountName"], not set by default
+          serviceAccountName: "myappk8saccess"
       # See PersistentVolumeClaim below for how the values are generated.
       volumeTemplates:
         - metadata:
