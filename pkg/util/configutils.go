@@ -115,3 +115,11 @@ func StorageSize(labels map[string]string, fallback string) resource.Quantity {
 
 	return *resource.NewQuantity(size, resource.BinarySI)
 }
+
+func ServiceAccountName(labels map[string]string) string {
+	serviceAccountName := GetOptional(labels, "k8ify.serviceAccountName")
+	if serviceAccountName == nil {
+		return ""
+	}
+	return *serviceAccountName
+}

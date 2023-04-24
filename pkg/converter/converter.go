@@ -124,6 +124,7 @@ func composeServiceToDeployment(
 		resources,
 		composeService.Entrypoint,
 		composeService.Command,
+		util.ServiceAccountName(composeService.Labels),
 	)
 
 	deployment.Spec = apps.DeploymentSpec{
@@ -194,6 +195,7 @@ func composeServiceToStatefulSet(
 		resources,
 		composeService.Entrypoint,
 		composeService.Command,
+		util.ServiceAccountName(composeService.Labels),
 	)
 
 	statefulset.Spec = apps.StatefulSetSpec{
@@ -232,6 +234,7 @@ func composeServiceToPodTemplate(
 	resources core.ResourceRequirements,
 	entrypoint []string,
 	command []string,
+	serviceAccountName string,
 ) core.PodTemplateSpec {
 
 	container := core.Container{
@@ -261,9 +264,10 @@ func composeServiceToPodTemplate(
 	}
 
 	podSpec := core.PodSpec{
-		Containers:    []core.Container{container},
-		RestartPolicy: core.RestartPolicyAlways,
-		Volumes:       volumes,
+		Containers:         []core.Container{container},
+		RestartPolicy:      core.RestartPolicyAlways,
+		Volumes:            volumes,
+		ServiceAccountName: serviceAccountName,
 	}
 
 	return core.PodTemplateSpec{

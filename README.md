@@ -102,6 +102,7 @@ Service Labels
 | `k8ify.expose.$port: $host`  | The port `$port` is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
 | `k8ify.converter: $script`  | Call `$script` to convert this service into a K8s object, expecting YAML on `$script`'s stdout. Used for plugging additional functionality into k8ify. The first argument sent to `$script` is the name of the resource, after that all the parameters follow (next row) |
 | `k8ify.converter.$key: $value`  | Call `$script` with parameter `--$key $value` |
+| `k8ify.serviceAccountName: $name`  | Set this service's pod(s) spec.serviceAccountName to `$name`, which tells the pod(s) to use ServiceAccount `$name` for accessing the K8s API. This does not set up the ServiceAcccount itself. |
 
 Volume Labels
 

@@ -21,6 +21,7 @@ services:
       k8ify.readiness.successThreshold: 2
       k8ify.readiness.failureThreshold: 4
       k8ify.startup.path: /health/started
+      k8ify.serviceAccountName: portalk8saccess
     environment:
       - mongodb_hostname=mongo
       - mongodb_username=portal
