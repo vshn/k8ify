@@ -6,7 +6,7 @@ require (
 	github.com/compose-spec/compose-go v1.13.5
 	github.com/docker/go-units v0.5.0
 	github.com/joho/godotenv v1.5.1
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
 	gopkg.in/yaml.v3 v3.0.1
