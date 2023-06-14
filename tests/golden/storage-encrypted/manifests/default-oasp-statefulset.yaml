@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: default
+  name: default-oasp
+spec:
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: default
+  serviceName: ""
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: default
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: default-oasp-env
+        image: nginx
+        imagePullPolicy: Always
+        name: default-oasp
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: default-data
+      restartPolicy: Always
+  updateStrategy: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: default
+      name: default-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: bulk-encrypted
+    status: {}
+status:
+  availableReplicas: 0
+  replicas: 0

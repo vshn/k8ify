@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: share-1
+  name: share-1-oasp
+spec:
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: share-1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: share-1
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: share-1-oasp-env
+        image: nginx
+        imagePullPolicy: Always
+        name: share-1-oasp
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: shared-data
+      restartPolicy: Always
+      volumes:
+      - name: shared-data
+        persistentVolumeClaim:
+          claimName: shared-data-oasp
+status: {}

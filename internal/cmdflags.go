@@ -37,3 +37,20 @@ func (this *ShellEnvFilesFlag) String() string {
 func (this *ShellEnvFilesFlag) Type() string {
 	return ".env"
 }
+
+type ProviderFlag struct {
+	value string
+}
+
+func (this *ProviderFlag) Set(value string) error {
+	this.value = value
+	return nil
+}
+
+func (this *ProviderFlag) String() string {
+	return this.value
+}
+
+func (this *ProviderFlag) Type() string {
+	return "appuio-cloudscale"
+}

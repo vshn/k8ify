@@ -111,6 +111,7 @@ Volume Labels
 | `k8ify.size: 10G`  | Requested volume size. Defaults to `1G`.  |
 | `k8ify.singleton: true`  | Volume is only created once per environment instead of once per `$ref` per environment  |
 | `k8ify.shared: true` | Instead of `ReadWriteOnce`, create a `ReadWriteMany` volume; Services with multiple replicas will all share the same volume  |
+| `k8ify.storageClass: ssd` | Specify the storage class, e.g. 'hdd' or 'ssd'. Available values depend on the target system. |
 
 #### Health Checks
 
@@ -142,6 +143,16 @@ This replaces the TCP based health check by a more specific HTTP(S) check.
 ## Conversion
 
 The conversion process is documented in-depth in [Conversion](./docs/conversion.md).
+
+
+## Storage
+
+Storage support is documented in-depth in [Storage](./docs/storage.md).
+
+
+## Provider-Specific Features
+
+While k8ify tries to be provider agnostic, some features do depend on the target k8s setup. These are described in [Provider](./docs/provider.md).
 
 
 ## Testing

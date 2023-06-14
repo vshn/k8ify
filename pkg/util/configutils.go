@@ -88,7 +88,7 @@ func IsShared(labels map[string]string) bool {
 
 // StorageClass determines a storage class from a set of labels
 func StorageClass(labels map[string]string) *string {
-	return GetOptional(labels, "k8ify.storage-class")
+	return GetOptional(labels, "k8ify.storageClass")
 }
 
 func StorageSizeRaw(labels map[string]string) *string {
