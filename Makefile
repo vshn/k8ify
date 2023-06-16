@@ -9,6 +9,13 @@ fmt:
 test:
 	go test -v -race ./...
 
+.PHONY: build
+build:
+	CGO_ENABLED=0 \
+        GOARCH=amd64 \
+        GOOS=linux \
+        go build -a -tags netgo -ldflags '-s -w -extldflags "-static"'
+
 .PHONY: lint
 lint:
 	golangci-lint run ./...
