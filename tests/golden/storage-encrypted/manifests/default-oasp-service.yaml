@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: default
+  name: default-oasp
+spec:
+  selector:
+    k8ify.ref-slug: oasp
+    k8ify.service: default
+status:
+  loadBalancer: {}

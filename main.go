@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/vshn/k8ify/pkg/provider"
 	"os"
 	"time"
 
@@ -24,18 +25,29 @@ var (
 		Ref:          "",
 		IngressPatch: converter.IngressPatch{},
 	}
-	modifiedImages internal.ModifiedImagesFlag
-	shellEnvFiles  internal.ShellEnvFilesFlag
+	modifiedImages   internal.ModifiedImagesFlag
+	shellEnvFiles    internal.ShellEnvFilesFlag
+	dstProvider      internal.ProviderFlag
+	pflagInitialized = false
 )
 
+func InitPflag() {
+	// Main() may be called multiple times from tests, hence this kludge
+	if !pflagInitialized {
+		pflag.Var(&modifiedImages, "modified-image", "Image that has been modified during the build. Can be repeated.")
+		pflag.Var(&shellEnvFiles, "shell-env-file", "Shell environment file ('key=value' format) to be used in addition to the current shell environment. Can be repeated.")
+		pflag.Var(&dstProvider, "provider", "Select Kubernetes provider in order to use provider-specific features")
+		pflagInitialized = true
+	}
+}
+
 func main() {
-	pflag.Var(&modifiedImages, "modified-image", "Image that has been modified during the build. Can be repeated.")
-	pflag.Var(&shellEnvFiles, "shell-env-file", "Shell environment file ('key=value' format) to be used in addition to the current shell environment. Can be repeated.")
 	code := Main(os.Args)
 	os.Exit(code)
 }
 
 func Main(args []string) int {
+	InitPflag()
 	err := pflag.CommandLine.Parse(args[1:])
 	if err != nil {
 		logrus.Error(err)
@@ -98,6 +110,8 @@ func Main(args []string) int {
 	forceRestartAnnotation["k8ify.restart-trigger"] = fmt.Sprintf("%d", time.Now().Unix())
 	converter.PatchDeployments(objects.Deployments, modifiedImages.Values, forceRestartAnnotation)
 	converter.PatchStatefulSets(objects.StatefulSets, modifiedImages.Values, forceRestartAnnotation)
+
+	objects = provider.PatchAppuioCloudscale(dstProvider.String(), config, objects)
 
 	err = internal.WriteManifests(config.OutputDir, objects)
 	if err != nil {

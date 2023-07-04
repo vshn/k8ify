@@ -642,6 +642,7 @@ func composeVolumeToPvc(name string, labels map[string]string, volume *ir.Volume
 					"storage": volume.Size("1G"),
 				},
 			},
+			StorageClassName: util.StorageClass(volume.Labels()),
 		},
 	}
 }

@@ -1,0 +1,44 @@
+services:
+  default:
+    image: nginx
+    volumes:
+      - default-data:/data
+
+  default-shared:
+    image: nginx
+    volumes:
+      - default-shared-data:/data
+
+  share-0:
+    image: nginx
+    volumes:
+      - shared-data:/data
+  share-1:
+    image: nginx
+    volumes:
+      - shared-data:/data
+
+  singleton-db:
+    labels:
+      k8ify.singleton: true
+    image: nginx
+    volumes:
+      - singleton-db-storage:/data
+
+
+volumes:
+  default-data:
+    labels:
+      k8ify.storageClass: bulk-encrypted
+  default-shared-data:
+    labels:
+      k8ify.shared: true
+      k8ify.storageClass: ssd-encrypted
+  shared-data:
+    labels:
+      k8ify.shared: true
+      k8ify.storageClass: ssd-encrypted
+  singleton-db-storage:
+    labels:
+      k8ify.singleton: true
+      k8ify.storageClass: ssd-encrypted

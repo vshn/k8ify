@@ -13,3 +13,12 @@ func GetEnv() map[string]string {
 	}
 	return env
 }
+
+func GetEnvValueCaseInsensitive(caseInsensitiveKey string) string {
+	for k, v := range GetEnv() {
+		if strings.EqualFold(k, caseInsensitiveKey) {
+			return v
+		}
+	}
+	return ""
+}

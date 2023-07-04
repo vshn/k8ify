@@ -29,8 +29,9 @@ type Instance struct {
 }
 
 type Environment struct {
-	Refs []string          `yaml:"refs"`
-	Vars map[string]string `yaml:"vars"`
+	Refs   []string          `yaml:"refs"`
+	Vars   map[string]string `yaml:"vars"`
+	Params []string          `yaml:"params"`
 }
 
 func init() {
@@ -102,6 +103,7 @@ func testEnvironment(t *testing.T, envName string, env Environment) {
 	for _, ref := range env.GetRefs() {
 		t.Run(ref, func(t *testing.T) {
 			args := []string{"k8ify", envName, ref}
+			args = append(args, env.Params...)
 			fmt.Printf("Running %v", args)
 			var logs bytes.Buffer
 			logrus.SetOutput(&logs)
