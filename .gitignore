@@ -6,3 +6,7 @@
 /docker-compose-*
 /env
 /k8ify
+
+# Goreleaser
+/dist/
+/.github/release-notes.md
