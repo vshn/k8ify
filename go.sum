@@ -1,5 +1,5 @@
-github.com/compose-spec/compose-go v1.18.0 h1:IMKwjRFgI81kFhNarNxmRyRG+PuhBZKA6VpGl3pV5NA=
-github.com/compose-spec/compose-go v1.18.0/go.mod h1:zR2tP1+kZHi5vJz7PjpW6oMoDji/Js3GHjP+hfjf70Q=
+github.com/compose-spec/compose-go v1.18.1 h1:YVYYkV8fAHW/eCOgtqSe1tHrlaDVvwS8zgs6F5ukm/Y=
+github.com/compose-spec/compose-go v1.18.1/go.mod h1:zR2tP1+kZHi5vJz7PjpW6oMoDji/Js3GHjP+hfjf70Q=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
