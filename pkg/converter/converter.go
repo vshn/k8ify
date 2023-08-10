@@ -3,6 +3,7 @@ package converter
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -501,7 +502,9 @@ func CallExternalConverter(resourceName string, options map[string]string) (unst
 			args = append(args, "--"+k, v)
 		}
 	}
-	output, err := exec.Command(options["cmd"], args...).CombinedOutput()
+	cmd := exec.Command(options["cmd"], args...)
+	cmd.Stderr = os.Stderr
+	output, err := cmd.Output()
 	if err != nil {
 		for _, line := range strings.Split(string(output), "\n") {
 			logrus.Error(line)
