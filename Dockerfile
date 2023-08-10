@@ -10,6 +10,6 @@ COPY . ${HOME}
 RUN make test && make build
 
 # Runtime
-FROM docker.io/appuio/oc:v4.12
+FROM docker.io/appuio/oc:v4.13
 
 COPY --from=build k8ify /bin/
