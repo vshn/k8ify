@@ -1,15 +1,13 @@
 # Build
-FROM golang:latest AS build
+FROM docker.io/library/golang:latest AS build
 
-ENV HOME=/k8ify
-
-WORKDIR ${HOME}
-
-COPY . ${HOME}
-
+WORKDIR /src
+COPY . .
 RUN make test && make build
 
+FROM ghcr.io/vshn/appcat-cli:latest AS appcat-cli
 # Runtime
 FROM docker.io/appuio/oc:v4.13
 
-COPY --from=build k8ify /bin/
+COPY --from=appcat-cli /bin/appcat-cli /bin/appcat-cli
+COPY --from=build /src/k8ify /bin/k8ify
