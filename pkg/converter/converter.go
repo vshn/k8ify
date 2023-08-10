@@ -2,6 +2,11 @@ package converter
 
 import (
 	"fmt"
+	"log"
+	"os/exec"
+	"strconv"
+	"strings"
+
 	composeTypes "github.com/compose-spec/compose-go/types"
 	"github.com/sirupsen/logrus"
 	"github.com/vshn/k8ify/pkg/ir"
@@ -14,11 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
-	"log"
-	"os/exec"
 	"sigs.k8s.io/yaml"
-	"strconv"
-	"strings"
 )
 
 func composeServiceVolumesToK8s(

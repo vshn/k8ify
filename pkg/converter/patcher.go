@@ -1,9 +1,10 @@
 package converter
 
 import (
+	"strings"
+
 	apps "k8s.io/api/apps/v1"
 	networking "k8s.io/api/networking/v1"
-	"strings"
 )
 
 func PatchIngresses(ingresses []networking.Ingress, ingressPatch IngressPatch) {
