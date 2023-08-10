@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 )
 
@@ -219,7 +219,7 @@ func composeServiceToReplicas(composeService composeTypes.ServiceConfig) *int32 
 	}
 	// deploy.Replicas is an Uint64, but if you have over 2'000'000'000
 	// replicas, you might have different problems :)
-	return pointer.Int32(int32(*deploy.Replicas))
+	return ptr.To(int32(*deploy.Replicas))
 }
 
 func composeServiceToPodTemplate(
