@@ -2,12 +2,13 @@ package provider
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/sirupsen/logrus"
 	"github.com/vshn/k8ify/internal"
 	"github.com/vshn/k8ify/pkg/converter"
 	"github.com/vshn/k8ify/pkg/util"
 	core "k8s.io/api/core/v1"
-	"strings"
 )
 
 func PatchAppuioCloudscale(provider string, config internal.Config, objects converter.Objects) converter.Objects {

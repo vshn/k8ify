@@ -2,19 +2,18 @@ package main
 
 import (
 	"fmt"
-	"github.com/vshn/k8ify/pkg/provider"
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
-	"github.com/sirupsen/logrus"
-
 	composeLoader "github.com/compose-spec/compose-go/loader"
 	composeTypes "github.com/compose-spec/compose-go/types"
+	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/vshn/k8ify/internal"
 	"github.com/vshn/k8ify/pkg/converter"
 	"github.com/vshn/k8ify/pkg/ir"
+	"github.com/vshn/k8ify/pkg/provider"
 	"github.com/vshn/k8ify/pkg/util"
 )
 
