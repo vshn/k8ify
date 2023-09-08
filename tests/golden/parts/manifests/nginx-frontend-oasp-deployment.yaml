@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: nginx-frontend
+  name: nginx-frontend-oasp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: nginx-frontend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: nginx-frontend
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: nginx-frontend-oasp-env
+        image: nginx-frontend:prod
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
+        name: nginx-frontend-oasp
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: "10"
+            memory: 2Gi
+          requests:
+            cpu: "1"
+            memory: 2Gi
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
+        volumeMounts:
+        - mountPath: /data/web
+          name: webdata
+      - envFrom:
+        - secretRef:
+            name: php-backend-oasp-env
+        image: php-backend:prod
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 4480
+          timeoutSeconds: 60
+        name: php-backend-oasp
+        ports:
+        - containerPort: 4480
+        resources:
+          limits:
+            cpu: "20"
+            memory: 4Gi
+          requests:
+            cpu: "2"
+            memory: 4Gi
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 4480
+          timeoutSeconds: 60
+        volumeMounts:
+        - mountPath: /data/sessions
+          name: sessions
+        - mountPath: /data/web
+          name: webdata
+      restartPolicy: Always
+      volumes:
+      - name: sessions
+        persistentVolumeClaim:
+          claimName: sessions-oasp
+      - name: webdata
+        persistentVolumeClaim:
+          claimName: webdata-oasp
+status: {}

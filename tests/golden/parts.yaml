@@ -1,0 +1,7 @@
+---
+environments:
+  prod:
+    vars:
+      prod_mongodb_password: very secret yeah
+      UID: "42"
+      GID: "42"

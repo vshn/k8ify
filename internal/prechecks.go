@@ -1,31 +1,46 @@
 package internal
 
 import (
+	"github.com/vshn/k8ify/pkg/util"
 	"os"
 
-	composeTypes "github.com/compose-spec/compose-go/types"
 	"github.com/sirupsen/logrus"
 	"github.com/vshn/k8ify/pkg/ir"
 )
 
 const HLINE = "--------------------------------------------------------------------------------"
 
-func ComposeServicePrecheck(composeService composeTypes.ServiceConfig) {
-	if composeService.Deploy == nil || composeService.Deploy.Resources.Reservations == nil {
-		logrus.Error(HLINE)
-		logrus.Errorf("  Service '%s' does not have any CPU/memory reservations defined.", composeService.Name)
-		logrus.Error("  k8ify can generate K8s manifests regardless, but your service will be")
-		logrus.Error("  unreliable or not work at all: It may not start at all, be slow to react")
-		logrus.Error("  due to insufficient CPU time or get OOM killed due to insufficient memory.")
-		logrus.Error("  Please specify CPU and memory reservations like this:")
-		logrus.Error("    services:")
-		logrus.Errorf("      %s:", composeService.Name)
-		logrus.Error("        deploy:")
-		logrus.Error("          resources:")
-		logrus.Error("            reservations:    # Minimum guaranteed by K8s to be always available")
-		logrus.Error(`              cpus: "0.2"    # Number of CPU cores. Quotes are required!`)
-		logrus.Error("              memory: 256M")
-		logrus.Error(HLINE)
+func ComposeServicePrecheck(inputs *ir.Inputs) {
+	for _, service := range inputs.Services {
+		composeService := service.AsCompose()
+		if composeService.Deploy == nil || composeService.Deploy.Resources.Reservations == nil {
+			logrus.Error(HLINE)
+			logrus.Errorf("  Service '%s' does not have any CPU/memory reservations defined.", composeService.Name)
+			logrus.Error("  k8ify can generate K8s manifests regardless, but your service will be")
+			logrus.Error("  unreliable or not work at all: It may not start at all, be slow to react")
+			logrus.Error("  due to insufficient CPU time or get OOM killed due to insufficient memory.")
+			logrus.Error("  Please specify CPU and memory reservations like this:")
+			logrus.Error("    services:")
+			logrus.Errorf("      %s:", composeService.Name)
+			logrus.Error("        deploy:")
+			logrus.Error("          resources:")
+			logrus.Error("            reservations:    # Minimum guaranteed by K8s to be always available")
+			logrus.Error(`              cpus: "0.2"    # Number of CPU cores. Quotes are required!`)
+			logrus.Error("              memory: 256M")
+			logrus.Error(HLINE)
+		}
+		parentSingleton := util.IsSingleton(composeService.Labels)
+		for _, part := range service.GetParts() {
+			partSingleton := util.IsSingleton(part.AsCompose().Labels)
+			if partSingleton && !parentSingleton {
+				logrus.Errorf("Singleton compose service %s can't be part of non-singleton compose service %s", part.Name, service.Name)
+				os.Exit(1)
+			}
+			if !partSingleton && parentSingleton {
+				logrus.Errorf("Non-singleton compose service %s can't be part of singleton compose service %s", part.Name, service.Name)
+				os.Exit(1)
+			}
+		}
 	}
 }
 
@@ -34,7 +49,19 @@ func VolumesPrecheck(inputs *ir.Inputs) {
 	references := make(map[string][]string)
 
 	for _, service := range inputs.Services {
+
+		// conditions must be met not only for volumes of the parent but also all volumes of the parts
+		allVolumes := make(map[string]bool) // set semantics (eliminate duplicates)
 		for _, volumeName := range service.VolumeNames() {
+			allVolumes[volumeName] = true
+		}
+		for _, part := range service.GetParts() {
+			for _, volumeName := range part.VolumeNames() {
+				allVolumes[volumeName] = true
+			}
+		}
+
+		for volumeName := range allVolumes {
 			volume, ok := inputs.Volumes[volumeName]
 
 			// CHECK: Volume does not exist

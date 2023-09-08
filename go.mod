@@ -1,6 +1,6 @@
 module github.com/vshn/k8ify
 
-go 1.18
+go 1.21
 
 require (
 	github.com/compose-spec/compose-go v1.18.4

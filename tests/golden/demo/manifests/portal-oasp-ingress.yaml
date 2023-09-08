@@ -7,7 +7,7 @@ metadata:
   labels:
     k8ify.ref-slug: oasp
     k8ify.service: portal
-  name: portal-oasp-8001
+  name: portal-oasp
 spec:
   rules:
   - host: portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud
@@ -20,9 +20,22 @@ spec:
               number: 8001
         path: /
         pathType: Prefix
+  - host: portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud
+    http:
+      paths:
+      - backend:
+          service:
+            name: portal-oasp
+            port:
+              number: 9001
+        path: /
+        pathType: Prefix
   tls:
   - hosts:
     - portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud
-    secretName: portal-oasp-8001-tls
+    secretName: portal-oasp
+  - hosts:
+    - portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud
+    secretName: portal-oasp
 status:
   loadBalancer: {}
