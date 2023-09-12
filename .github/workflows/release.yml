@@ -45,7 +45,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           # Without this the .git directory is not present and our tests fail
           build-args: BUILDKIT_CONTEXT_KEEP_GIT_DIR=true 
