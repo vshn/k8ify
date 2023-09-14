@@ -3,8 +3,10 @@ package converter
 import (
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -26,11 +28,11 @@ import (
 func composeServiceVolumesToK8s(
 	refSlug string,
 	mounts []composeTypes.ServiceVolumeConfig,
-	projectVolumes map[string]ir.Volume,
-) ([]core.Volume, []core.VolumeMount) {
+	projectVolumes map[string]*ir.Volume,
+) (map[string]core.Volume, []core.VolumeMount) {
 
 	volumeMounts := []core.VolumeMount{}
-	volumes := []core.Volume{}
+	volumes := make(map[string]core.Volume)
 
 	for _, mount := range mounts {
 		if mount.Type != "volume" {
@@ -45,30 +47,31 @@ func composeServiceVolumesToK8s(
 
 		volume := projectVolumes[mount.Source]
 		if volume.IsShared() {
-			volumes = append(volumes, core.Volume{
+			volumes[name] = core.Volume{
 				Name: name,
 				VolumeSource: core.VolumeSource{
 					PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
 						ClaimName: mount.Source + refSlug,
 					},
 				},
-			})
+			}
 		}
 	}
 	return volumes, volumeMounts
 }
 
-func composeServicePortsToK8s(composeServicePorts []composeTypes.ServicePortConfig) ([]core.ContainerPort, []core.ServicePort) {
-	containerPorts := []core.ContainerPort{}
+func composeServicePortsToK8sServicePorts(workload *ir.Service) []core.ServicePort {
 	servicePorts := []core.ServicePort{}
-	for _, port := range composeServicePorts {
+	ports := workload.AsCompose().Ports
+	// the single k8s service contains the ports of all parts
+	for _, part := range workload.GetParts() {
+		ports = append(ports, part.AsCompose().Ports...)
+	}
+	for _, port := range ports {
 		publishedPort, err := strconv.Atoi(port.Published)
 		if err != nil {
 			publishedPort = int(port.Target)
 		}
-		containerPorts = append(containerPorts, core.ContainerPort{
-			ContainerPort: int32(port.Target),
-		})
 		servicePorts = append(servicePorts, core.ServicePort{
 			Name: fmt.Sprint(publishedPort),
 			Port: int32(publishedPort),
@@ -77,10 +80,20 @@ func composeServicePortsToK8s(composeServicePorts []composeTypes.ServicePortConf
 			},
 		})
 	}
-	return containerPorts, servicePorts
+	return servicePorts
 }
 
-func composeServiceToSecret(refSlug string, composeService composeTypes.ServiceConfig, labels map[string]string) core.Secret {
+func composeServicePortsToK8sContainerPorts(workload *ir.Service) []core.ContainerPort {
+	containerPorts := []core.ContainerPort{}
+	for _, port := range workload.AsCompose().Ports {
+		containerPorts = append(containerPorts, core.ContainerPort{
+			ContainerPort: int32(port.Target),
+		})
+	}
+	return containerPorts
+}
+
+func composeServiceToSecret(composeService composeTypes.ServiceConfig, refSlug string, labels map[string]string) core.Secret {
 	stringData := make(map[string]string)
 	for key, value := range composeService.Environment {
 		stringData[key] = *value
@@ -95,50 +108,36 @@ func composeServiceToSecret(refSlug string, composeService composeTypes.ServiceC
 }
 
 func composeServiceToDeployment(
+	workload *ir.Service,
 	refSlug string,
-	composeService composeTypes.ServiceConfig,
-	containerPorts []core.ContainerPort,
-	volumes []core.Volume,
-	volumeMounts []core.VolumeMount,
-	secretName string,
+	projectVolumes map[string]*ir.Volume,
 	labels map[string]string,
-) apps.Deployment {
+) (apps.Deployment, []core.Secret) {
 
 	deployment := apps.Deployment{}
 	deployment.APIVersion = "apps/v1"
 	deployment.Kind = "Deployment"
-	deployment.Name = composeService.Name + refSlug
+	deployment.Name = workload.AsCompose().Name + refSlug
 	deployment.Labels = labels
-	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(composeService)
-	resources := composeServiceToResourceRequirements(composeService)
 
-	templateSpec := composeServiceToPodTemplate(
-		deployment.Name,
-		composeService.Image,
-		secretName,
-		containerPorts,
-		livenessProbe,
-		readinessProbe,
-		startupProbe,
-		volumes,
-		volumeMounts,
+	templateSpec, secrets := composeServiceToPodTemplate(
+		workload,
+		refSlug,
+		projectVolumes,
 		labels,
-		resources,
-		composeService.Entrypoint,
-		composeService.Command,
-		util.ServiceAccountName(composeService.Labels),
+		util.ServiceAccountName(workload.AsCompose().Labels),
 	)
 
 	deployment.Spec = apps.DeploymentSpec{
-		Replicas: composeServiceToReplicas(composeService),
-		Strategy: composeServiceToStrategy(composeService),
+		Replicas: composeServiceToReplicas(workload.AsCompose()),
+		Strategy: composeServiceToStrategy(workload.AsCompose()),
 		Template: templateSpec,
 		Selector: &metav1.LabelSelector{
 			MatchLabels: labels,
 		},
 	}
 
-	return deployment
+	return deployment, secrets
 }
 
 func composeServiceToStrategy(composeService composeTypes.ServiceConfig) apps.DeploymentStrategy {
@@ -165,43 +164,29 @@ func getUpdateOrder(composeService composeTypes.ServiceConfig) string {
 }
 
 func composeServiceToStatefulSet(
+	workload *ir.Service,
 	refSlug string,
-	composeService composeTypes.ServiceConfig,
-	containerPorts []core.ContainerPort,
-	volumes []core.Volume,
-	volumeMounts []core.VolumeMount,
+	projectVolumes map[string]*ir.Volume,
 	volumeClaims []core.PersistentVolumeClaim,
-	secretName string,
 	labels map[string]string,
-) apps.StatefulSet {
+) (apps.StatefulSet, []core.Secret) {
 
 	statefulset := apps.StatefulSet{}
 	statefulset.APIVersion = "apps/v1"
 	statefulset.Kind = "StatefulSet"
-	statefulset.Name = composeService.Name + refSlug
+	statefulset.Name = workload.AsCompose().Name + refSlug
 	statefulset.Labels = labels
-	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(composeService)
-	resources := composeServiceToResourceRequirements(composeService)
 
-	templateSpec := composeServiceToPodTemplate(
-		statefulset.Name,
-		composeService.Image,
-		secretName,
-		containerPorts,
-		livenessProbe,
-		readinessProbe,
-		startupProbe,
-		volumes,
-		volumeMounts,
+	templateSpec, secrets := composeServiceToPodTemplate(
+		workload,
+		refSlug,
+		projectVolumes,
 		labels,
-		resources,
-		composeService.Entrypoint,
-		composeService.Command,
-		util.ServiceAccountName(composeService.Labels),
+		util.ServiceAccountName(workload.AsCompose().Labels),
 	)
 
 	statefulset.Spec = apps.StatefulSetSpec{
-		Replicas: composeServiceToReplicas(composeService),
+		Replicas: composeServiceToReplicas(workload.AsCompose()),
 		Template: templateSpec,
 		Selector: &metav1.LabelSelector{
 			MatchLabels: labels,
@@ -209,7 +194,7 @@ func composeServiceToStatefulSet(
 		VolumeClaimTemplates: volumeClaims,
 	}
 
-	return statefulset
+	return statefulset, secrets
 }
 
 func composeServiceToReplicas(composeService composeTypes.ServiceConfig) *int32 {
@@ -223,26 +208,67 @@ func composeServiceToReplicas(composeService composeTypes.ServiceConfig) *int32 
 }
 
 func composeServiceToPodTemplate(
-	name string,
-	image string,
-	secretName string,
-	ports []core.ContainerPort,
-	livenessProbe *core.Probe,
-	readinessProbe *core.Probe,
-	startupProbe *core.Probe,
-	volumes []core.Volume,
-	volumeMounts []core.VolumeMount,
+	workload *ir.Service,
+	refSlug string,
+	projectVolumes map[string]*ir.Volume,
 	labels map[string]string,
-	resources core.ResourceRequirements,
-	entrypoint []string,
-	command []string,
 	serviceAccountName string,
-) core.PodTemplateSpec {
+) (core.PodTemplateSpec, []core.Secret) {
+	container, secret, volumes := composeServiceToContainer(workload, refSlug, projectVolumes, labels)
+	containers := []core.Container{container}
+	secrets := []core.Secret{secret}
 
-	container := core.Container{
-		Name:  name,
-		Image: image,
-		Ports: ports,
+	for _, part := range workload.GetParts() {
+		c, s, cvs := composeServiceToContainer(part, refSlug, projectVolumes, labels)
+		containers = append(containers, c)
+		secrets = append(secrets, s)
+		maps.Copy(volumes, cvs)
+	}
+
+	// make sure the array is sorted to have deterministic output
+	keys := make([]string, 0, len(volumes))
+	for key := range volumes {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	volumesArray := []core.Volume{}
+	for _, key := range keys {
+		volumesArray = append(volumesArray, volumes[key])
+	}
+
+	podSpec := core.PodSpec{
+		Containers:         containers,
+		RestartPolicy:      core.RestartPolicyAlways,
+		Volumes:            volumesArray,
+		ServiceAccountName: serviceAccountName,
+	}
+
+	return core.PodTemplateSpec{
+		Spec: podSpec,
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: labels,
+		},
+	}, secrets
+}
+
+func composeServiceToContainer(
+	workload *ir.Service,
+	refSlug string,
+	projectVolumes map[string]*ir.Volume,
+	labels map[string]string,
+) (core.Container, core.Secret, map[string]core.Volume) {
+	composeService := workload.AsCompose()
+	volumes, volumeMounts := composeServiceVolumesToK8s(
+		refSlug, workload.AsCompose().Volumes, projectVolumes,
+	)
+	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(workload)
+	containerPorts := composeServicePortsToK8sContainerPorts(workload)
+	resources := composeServiceToResourceRequirements(composeService)
+	secret := composeServiceToSecret(workload.AsCompose(), refSlug, labels)
+	return core.Container{
+		Name:  composeService.Name + refSlug,
+		Image: composeService.Image,
+		Ports: containerPorts,
 		// We COULD put the environment variables here, but because some of them likely contain sensitive data they are stored in a secret instead
 		// Env:          envVars,
 		// Reference the secret:
@@ -250,7 +276,7 @@ func composeServiceToPodTemplate(
 			{
 				SecretRef: &core.SecretEnvSource{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: secretName,
+						Name: secret.Name,
 					},
 				},
 			},
@@ -260,24 +286,10 @@ func composeServiceToPodTemplate(
 		ReadinessProbe:  readinessProbe,
 		StartupProbe:    startupProbe,
 		Resources:       resources,
-		Command:         entrypoint, // ENTRYPOINT in Docker == 'entrypoint' in Compose == 'command' in K8s
-		Args:            command,    // CMD in Docker == 'command' in Compose == 'args' in K8s
+		Command:         composeService.Entrypoint, // ENTRYPOINT in Docker == 'entrypoint' in Compose == 'command' in K8s
+		Args:            composeService.Command,    // CMD in Docker == 'command' in Compose == 'args' in K8s
 		ImagePullPolicy: core.PullAlways,
-	}
-
-	podSpec := core.PodSpec{
-		Containers:         []core.Container{container},
-		RestartPolicy:      core.RestartPolicyAlways,
-		Volumes:            volumes,
-		ServiceAccountName: serviceAccountName,
-	}
-
-	return core.PodTemplateSpec{
-		Spec: podSpec,
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: labels,
-		},
-	}
+	}, secret, volumes
 }
 
 func composeServiceToService(refSlug string, composeService composeTypes.ServiceConfig, servicePorts []core.ServicePort, labels map[string]string) core.Service {
@@ -294,72 +306,82 @@ func composeServiceToService(refSlug string, composeService composeTypes.Service
 	return service
 }
 
-func composeServiceToIngress(refSlug string, composeService composeTypes.ServiceConfig, service core.Service, labels map[string]string) []networking.Ingress {
-	ingresses := []networking.Ingress{}
-	for i, port := range service.Spec.Ports {
-		// we expect the config to be in "k8ify.expose.PORT"
-		configPrefix := fmt.Sprintf("k8ify.expose.%d", port.Port)
-		ingressConfig := util.SubConfig(composeService.Labels, configPrefix, "host")
-		if _, ok := ingressConfig["host"]; !ok && i == 0 {
-			// for the first port we also accept config in "k8ify.expose"
-			ingressConfig = util.SubConfig(composeService.Labels, "k8ify.expose", "host")
-		}
+func composeServiceToIngress(workload *ir.Service, refSlug string, service core.Service, labels map[string]string) *networking.Ingress {
+	composeServices := []composeTypes.ServiceConfig{workload.AsCompose()}
+	for _, w := range workload.GetParts() {
+		composeServices = append(composeServices, w.AsCompose())
+	}
 
-		if host, ok := ingressConfig["host"]; ok {
-			ingress := networking.Ingress{}
-			ingress.APIVersion = "networking.k8s.io/v1"
-			ingress.Kind = "Ingress"
-			ingress.Name = fmt.Sprintf("%s%s-%d", composeService.Name, refSlug, service.Spec.Ports[i].Port)
-			ingress.Labels = labels
+	var ingressRules []networking.IngressRule
+	var ingressTLSs []networking.IngressTLS
 
-			serviceBackendPort := networking.ServiceBackendPort{
-				Number: service.Spec.Ports[i].Port,
+	for _, composeService := range composeServices {
+		for i, port := range service.Spec.Ports {
+			// we expect the config to be in "k8ify.expose.PORT"
+			configPrefix := fmt.Sprintf("k8ify.expose.%d", port.Port)
+			ingressConfig := util.SubConfig(composeService.Labels, configPrefix, "host")
+			if _, ok := ingressConfig["host"]; !ok && i == 0 {
+				// for the first port we also accept config in "k8ify.expose"
+				ingressConfig = util.SubConfig(composeService.Labels, "k8ify.expose", "host")
 			}
 
-			ingressServiceBackend := networking.IngressServiceBackend{
-				Name: composeService.Name + refSlug,
-				Port: serviceBackendPort,
-			}
+			if host, ok := ingressConfig["host"]; ok {
+				serviceBackendPort := networking.ServiceBackendPort{
+					Number: service.Spec.Ports[i].Port,
+				}
 
-			ingressBackend := networking.IngressBackend{
-				Service: &ingressServiceBackend,
-			}
+				ingressServiceBackend := networking.IngressServiceBackend{
+					Name: service.Name,
+					Port: serviceBackendPort,
+				}
 
-			pathType := networking.PathTypePrefix
-			path := networking.HTTPIngressPath{
-				PathType: &pathType,
-				Path:     "/",
-				Backend:  ingressBackend,
-			}
+				ingressBackend := networking.IngressBackend{
+					Service: &ingressServiceBackend,
+				}
 
-			httpIngressRuleValue := networking.HTTPIngressRuleValue{
-				Paths: []networking.HTTPIngressPath{path},
-			}
+				pathType := networking.PathTypePrefix
+				path := networking.HTTPIngressPath{
+					PathType: &pathType,
+					Path:     "/",
+					Backend:  ingressBackend,
+				}
 
-			ingressRuleValue := networking.IngressRuleValue{
-				HTTP: &httpIngressRuleValue,
-			}
+				httpIngressRuleValue := networking.HTTPIngressRuleValue{
+					Paths: []networking.HTTPIngressPath{path},
+				}
 
-			ingressRule := networking.IngressRule{
-				Host:             host,
-				IngressRuleValue: ingressRuleValue,
-			}
+				ingressRuleValue := networking.IngressRuleValue{
+					HTTP: &httpIngressRuleValue,
+				}
 
-			ingressTls := networking.IngressTLS{
-				Hosts:      []string{host},
-				SecretName: fmt.Sprintf("%s-tls", ingress.Name),
-			}
+				ingressRules = append(ingressRules, networking.IngressRule{
+					Host:             host,
+					IngressRuleValue: ingressRuleValue,
+				})
 
-			ingressSpec := networking.IngressSpec{
-				Rules: []networking.IngressRule{ingressRule},
-				TLS:   []networking.IngressTLS{ingressTls},
+				ingressTLSs = append(ingressTLSs, networking.IngressTLS{
+					Hosts:      []string{host},
+					SecretName: workload.Name + refSlug,
+				})
 			}
-
-			ingress.Spec = ingressSpec
-			ingresses = append(ingresses, ingress)
 		}
 	}
-	return ingresses
+
+	if len(ingressRules) == 0 {
+		return nil
+	}
+
+	ingress := networking.Ingress{}
+	ingress.APIVersion = "networking.k8s.io/v1"
+	ingress.Kind = "Ingress"
+	ingress.Name = workload.Name + refSlug
+	ingress.Labels = labels
+	ingress.Spec = networking.IngressSpec{
+		Rules: ingressRules,
+		TLS:   ingressTLSs,
+	}
+
+	return &ingress
 }
 
 func composeServiceToProbe(config map[string]string, port intstr.IntOrString) *core.Probe {
@@ -410,7 +432,8 @@ func composeServiceToProbe(config map[string]string, port intstr.IntOrString) *c
 	}
 }
 
-func composeServiceToProbes(composeService composeTypes.ServiceConfig) (*core.Probe, *core.Probe, *core.Probe) {
+func composeServiceToProbes(workload *ir.Service) (*core.Probe, *core.Probe, *core.Probe) {
+	composeService := workload.AsCompose()
 	if len(composeService.Ports) == 0 {
 		return nil, nil, nil
 	}
@@ -519,7 +542,7 @@ func CallExternalConverter(resourceName string, options map[string]string) (unst
 	return otherResource, nil
 }
 
-func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[string]ir.Volume) Objects {
+func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[string]*ir.Volume) Objects {
 	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 4), workload)
 	labels := make(map[string]string)
 	labels["k8ify.service"] = workload.Name
@@ -548,26 +571,24 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 
 	composeService := workload.AsCompose()
 
-	secret := composeServiceToSecret(refSlug, composeService, labels)
-	objects.Secrets = []core.Secret{secret}
-
-	containerPorts, servicePorts := composeServicePortsToK8s(composeService.Ports)
+	servicePorts := composeServicePortsToK8sServicePorts(workload)
 	service := composeServiceToService(refSlug, composeService, servicePorts, labels)
 	objects.Services = []core.Service{service}
 
-	volumes, volumeMounts := composeServiceVolumesToK8s(
-		refSlug, composeService.Volumes, projectVolumes,
-	)
-
-	// Find volumes used by this service
+	// Find volumes used by this service and all its parts
 	rwoVolumes, rwxVolumes := workload.Volumes(projectVolumes)
+	for _, part := range workload.GetParts() {
+		rwoV, rwxV := part.Volumes(projectVolumes)
+		maps.Copy(rwoVolumes, rwoV)
+		maps.Copy(rwxVolumes, rwxV)
+	}
 
 	// All shared (rwx) volumes used by the service, no matter if the service is a StatefulSet or a Deployment, must be
 	// turned into PersistentVolumeClaims. Note that since these volumes are shared, the same PersistentVolumeClaim might
 	// be generated by multiple compose services. Objects.Append() takes care of deduplication.
 	pvcs := []core.PersistentVolumeClaim{}
 	for _, vol := range rwxVolumes {
-		pvcs = append(pvcs, ComposeSharedVolumeToK8s(ref, &vol))
+		pvcs = append(pvcs, ComposeSharedVolumeToK8s(ref, vol))
 	}
 	objects.PersistentVolumeClaims = pvcs
 
@@ -577,34 +598,35 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 		// ensuring that each volume remains rwo
 		pvcs := []core.PersistentVolumeClaim{}
 		for _, vol := range rwoVolumes {
-			pvcs = append(pvcs, composeVolumeToPvc(vol.Name, labels, &vol))
+			pvcs = append(pvcs, composeVolumeToPvc(vol.Name, labels, vol))
 		}
 
-		statefulset := composeServiceToStatefulSet(
+		statefulset, secrets := composeServiceToStatefulSet(
+			workload,
 			refSlug,
-			composeService,
-			containerPorts,
-			volumes,
-			volumeMounts,
+			projectVolumes,
 			pvcs,
-			secret.Name,
 			labels,
 		)
 		objects.StatefulSets = []apps.StatefulSet{statefulset}
+		objects.Secrets = secrets
 	} else {
-		deployment := composeServiceToDeployment(refSlug,
-			composeService,
-			containerPorts,
-			volumes,
-			volumeMounts,
-			secret.Name,
+		deployment, secrets := composeServiceToDeployment(
+			workload,
+			refSlug,
+			projectVolumes,
 			labels,
 		)
 		objects.Deployments = []apps.Deployment{deployment}
+		objects.Secrets = secrets
 	}
 
-	ingresses := composeServiceToIngress(refSlug, composeService, service, labels)
-	objects.Ingresses = ingresses
+	ingress := composeServiceToIngress(workload, refSlug, service, labels)
+	if ingress == nil {
+		objects.Ingresses = []networking.Ingress{}
+	} else {
+		objects.Ingresses = []networking.Ingress{*ingress}
+	}
 
 	return objects
 }

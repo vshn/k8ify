@@ -6,6 +6,7 @@
 /docker-compose-*
 /env
 /k8ify
+/.idea
 
 # Goreleaser
 /dist/

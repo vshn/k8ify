@@ -1,0 +1,58 @@
+version: '3.4'
+services:
+  nginx-frontend:
+    image: nginx-frontend:prod
+    deploy:
+      replicas: 2
+      resources:
+        reservations:
+          cpus: '1'
+          memory: 2G
+    labels:
+      k8ify.expose.80: 'mywebapp.example.com'
+  php-backend:
+    image: php-backend:prod
+    labels:
+      k8ify.partOf: nginx-frontend
+      k8ify.expose.4480: 'nginx-bypass.mywebapp.example.com'
+    deploy:
+      resources:
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+  mongo:
+    labels:
+      k8ify.singleton: true
+    image: mongo:4.0
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          cpus: '0.5'
+          memory: 4G
+    ports:
+      - '127.0.0.1:27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+  mongo-metrics-sidecar:
+    image: metrics-sidecar:latest
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    labels:
+      k8ify.singleton: true
+      k8ify.partOf: mongo
+    ports:
+      - '127.0.0.1:33000:33000'
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
+    labels:
+      k8ify.singleton: true

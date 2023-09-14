@@ -99,6 +99,10 @@ func Converter(labels map[string]string) *string {
 	return GetOptional(labels, "k8ify.converter")
 }
 
+func PartOf(labels map[string]string) *string {
+	return GetOptional(labels, "k8ify.partOf")
+}
+
 // StorageSize determines the requested storage size for a volume, or a
 // fallback value.
 func StorageSize(labels map[string]string, fallback string) resource.Quantity {

@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.service: mongo
+  name: mongo
+spec:
+  selector:
+    matchLabels:
+      k8ify.service: mongo
+  serviceName: ""
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.service: mongo
+    spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: mongo-env
+        image: mongo:4.0
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 27017
+          timeoutSeconds: 60
+        name: mongo
+        ports:
+        - containerPort: 27017
+        resources:
+          limits:
+            memory: 8Gi
+          requests:
+            cpu: 500m
+            memory: 4Gi
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 27017
+          timeoutSeconds: 60
+        volumeMounts:
+        - mountPath: /data/db
+          name: mongodb-data
+      - envFrom:
+        - secretRef:
+            name: mongo-metrics-sidecar-env
+        image: metrics-sidecar:latest
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 33000
+          timeoutSeconds: 60
+        name: mongo-metrics-sidecar
+        ports:
+        - containerPort: 33000
+        resources:
+          limits:
+            cpu: "1"
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 33000
+          timeoutSeconds: 60
+        volumeMounts:
+        - mountPath: /data/db
+          name: mongodb-data
+      restartPolicy: Always
+  updateStrategy: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.service: mongo
+      name: mongodb-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+    status: {}
+status:
+  availableReplicas: 0
+  replicas: 0

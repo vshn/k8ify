@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: nginx-frontend
+  name: nginx-frontend-oasp
+spec:
+  rules:
+  - host: mywebapp.example.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: nginx-frontend-oasp
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  - host: nginx-bypass.mywebapp.example.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: nginx-frontend-oasp
+            port:
+              number: 4480
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - mywebapp.example.com
+    secretName: nginx-frontend-oasp
+  - hosts:
+    - nginx-bypass.mywebapp.example.com
+    secretName: nginx-frontend-oasp
+status:
+  loadBalancer: {}

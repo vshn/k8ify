@@ -1,0 +1,26 @@
+version: '3.4'
+services:
+  nginx-frontend:
+    image: nginx-frontend:dev
+    ports:
+      - "80:80"
+    volumes:
+      - webdata:/data/web
+    environment:
+      - foo=bar
+  php-backend:
+    image: php-backend:dev
+    ports:
+      - "4480:4480"
+    volumes:
+      - webdata:/data/web
+      - sessions:/data/sessions
+    environment:
+      - xyz=baz
+volumes:
+  webdata:
+    labels:
+      k8ify.shared: true
+  sessions:
+    labels:
+      k8ify.shared: true
