@@ -99,7 +99,11 @@ func composeServiceToSecret(workload *ir.Service, refSlug string, labels map[str
 	}
 	stringData := make(map[string]string)
 	for key, value := range workload.AsCompose().Environment {
-		stringData[key] = *value
+		if value == nil {
+			stringData[key] = ""
+		} else {
+			stringData[key] = *value
+		}
 	}
 	secret := core.Secret{}
 	secret.APIVersion = "v1"

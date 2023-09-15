@@ -1,0 +1,7 @@
+---
+environments:
+  prod:
+    vars:
+      foo: 
+      bar: ""
+      baz: asdf
