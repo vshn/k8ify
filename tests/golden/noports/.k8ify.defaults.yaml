@@ -1,0 +1,3 @@
+ingressPatch:
+  addAnnotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production

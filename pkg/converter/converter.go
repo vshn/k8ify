@@ -292,7 +292,10 @@ func composeServiceToContainer(
 	}, secret, volumes
 }
 
-func composeServiceToService(refSlug string, composeService composeTypes.ServiceConfig, servicePorts []core.ServicePort, labels map[string]string) core.Service {
+func composeServiceToService(refSlug string, composeService composeTypes.ServiceConfig, servicePorts []core.ServicePort, labels map[string]string) *core.Service {
+	if len(servicePorts) == 0 {
+		return nil
+	}
 	serviceSpec := core.ServiceSpec{
 		Ports:    servicePorts,
 		Selector: labels,
@@ -303,10 +306,13 @@ func composeServiceToService(refSlug string, composeService composeTypes.Service
 	service.Kind = "Service"
 	service.Name = composeService.Name + refSlug
 	service.Labels = labels
-	return service
+	return &service
 }
 
-func composeServiceToIngress(workload *ir.Service, refSlug string, service core.Service, labels map[string]string) *networking.Ingress {
+func composeServiceToIngress(workload *ir.Service, refSlug string, service *core.Service, labels map[string]string) *networking.Ingress {
+	if service == nil {
+		return nil
+	}
 	composeServices := []composeTypes.ServiceConfig{workload.AsCompose()}
 	for _, w := range workload.GetParts() {
 		composeServices = append(composeServices, w.AsCompose())
@@ -573,7 +579,11 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 
 	servicePorts := composeServicePortsToK8sServicePorts(workload)
 	service := composeServiceToService(refSlug, composeService, servicePorts, labels)
-	objects.Services = []core.Service{service}
+	if service == nil {
+		objects.Services = []core.Service{}
+	} else {
+		objects.Services = []core.Service{*service}
+	}
 
 	// Find volumes used by this service and all its parts
 	rwoVolumes, rwxVolumes := workload.Volumes(projectVolumes)
