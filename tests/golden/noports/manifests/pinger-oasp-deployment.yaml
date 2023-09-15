@@ -21,10 +21,7 @@ spec:
         k8ify.service: pinger
     spec:
       containers:
-      - envFrom:
-        - secretRef:
-            name: pinger-oasp-env
-        image: pinger:4.0
+      - image: pinger:4.0
         imagePullPolicy: Always
         name: pinger-oasp
         resources: {}

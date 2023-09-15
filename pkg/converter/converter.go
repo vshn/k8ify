@@ -93,7 +93,10 @@ func composeServicePortsToK8sContainerPorts(workload *ir.Service) []core.Contain
 	return containerPorts
 }
 
-func composeServiceToSecret(composeService composeTypes.ServiceConfig, refSlug string, labels map[string]string) core.Secret {
+func composeServiceToSecret(composeService composeTypes.ServiceConfig, refSlug string, labels map[string]string) *core.Secret {
+	if len(composeService.Environment) == 0 {
+		return nil
+	}
 	stringData := make(map[string]string)
 	for key, value := range composeService.Environment {
 		stringData[key] = *value
@@ -104,7 +107,7 @@ func composeServiceToSecret(composeService composeTypes.ServiceConfig, refSlug s
 	secret.Name = composeService.Name + refSlug + "-env"
 	secret.Labels = labels
 	secret.StringData = stringData
-	return secret
+	return &secret
 }
 
 func composeServiceToDeployment(
@@ -216,12 +219,17 @@ func composeServiceToPodTemplate(
 ) (core.PodTemplateSpec, []core.Secret) {
 	container, secret, volumes := composeServiceToContainer(workload, refSlug, projectVolumes, labels)
 	containers := []core.Container{container}
-	secrets := []core.Secret{secret}
+	secrets := []core.Secret{}
+	if secret != nil {
+		secrets = append(secrets, *secret)
+	}
 
 	for _, part := range workload.GetParts() {
 		c, s, cvs := composeServiceToContainer(part, refSlug, projectVolumes, labels)
 		containers = append(containers, c)
-		secrets = append(secrets, s)
+		if s != nil {
+			secrets = append(secrets, *s)
+		}
 		maps.Copy(volumes, cvs)
 	}
 
@@ -256,7 +264,7 @@ func composeServiceToContainer(
 	refSlug string,
 	projectVolumes map[string]*ir.Volume,
 	labels map[string]string,
-) (core.Container, core.Secret, map[string]core.Volume) {
+) (core.Container, *core.Secret, map[string]core.Volume) {
 	composeService := workload.AsCompose()
 	volumes, volumeMounts := composeServiceVolumesToK8s(
 		refSlug, workload.AsCompose().Volumes, projectVolumes,
@@ -265,6 +273,10 @@ func composeServiceToContainer(
 	containerPorts := composeServicePortsToK8sContainerPorts(workload)
 	resources := composeServiceToResourceRequirements(composeService)
 	secret := composeServiceToSecret(workload.AsCompose(), refSlug, labels)
+	envFrom := []core.EnvFromSource{}
+	if secret != nil {
+		envFrom = append(envFrom, core.EnvFromSource{SecretRef: &core.SecretEnvSource{LocalObjectReference: core.LocalObjectReference{Name: secret.Name}}})
+	}
 	return core.Container{
 		Name:  composeService.Name + refSlug,
 		Image: composeService.Image,
@@ -272,15 +284,7 @@ func composeServiceToContainer(
 		// We COULD put the environment variables here, but because some of them likely contain sensitive data they are stored in a secret instead
 		// Env:          envVars,
 		// Reference the secret:
-		EnvFrom: []core.EnvFromSource{
-			{
-				SecretRef: &core.SecretEnvSource{
-					LocalObjectReference: core.LocalObjectReference{
-						Name: secret.Name,
-					},
-				},
-			},
-		},
+		EnvFrom:         envFrom,
 		VolumeMounts:    volumeMounts,
 		LivenessProbe:   livenessProbe,
 		ReadinessProbe:  readinessProbe,

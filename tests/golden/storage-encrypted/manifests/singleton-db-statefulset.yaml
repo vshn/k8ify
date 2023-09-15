@@ -17,10 +17,7 @@ spec:
         k8ify.service: singleton-db
     spec:
       containers:
-      - envFrom:
-        - secretRef:
-            name: singleton-db-env
-        image: nginx
+      - image: nginx
         imagePullPolicy: Always
         name: singleton-db
         resources: {}

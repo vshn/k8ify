@@ -21,10 +21,7 @@ spec:
         k8ify.service: default-shared
     spec:
       containers:
-      - envFrom:
-        - secretRef:
-            name: default-shared-oasp-env
-        image: nginx
+      - image: nginx
         imagePullPolicy: Always
         name: default-shared-oasp
         resources: {}

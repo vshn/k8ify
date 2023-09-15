@@ -17,10 +17,7 @@ spec:
         k8ify.service: mongo
     spec:
       containers:
-      - envFrom:
-        - secretRef:
-            name: mongo-env
-        image: mongo:4.0
+      - image: mongo:4.0
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
@@ -48,10 +45,7 @@ spec:
         volumeMounts:
         - mountPath: /data/db
           name: mongodb-data
-      - envFrom:
-        - secretRef:
-            name: mongo-metrics-sidecar-env
-        image: metrics-sidecar:latest
+      - image: metrics-sidecar:latest
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
