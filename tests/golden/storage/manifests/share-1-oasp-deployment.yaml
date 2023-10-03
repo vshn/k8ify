@@ -21,10 +21,7 @@ spec:
         k8ify.service: share-1
     spec:
       containers:
-      - envFrom:
-        - secretRef:
-            name: share-1-oasp-env
-        image: nginx
+      - image: nginx
         imagePullPolicy: Always
         name: share-1-oasp
         resources: {}

@@ -22,10 +22,7 @@ spec:
         k8ify.service: nginx
     spec:
       containers:
-      - envFrom:
-        - secretRef:
-            name: nginx-oasp-env
-        image: docker.io/library/nginx
+      - image: docker.io/library/nginx
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
