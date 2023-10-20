@@ -93,19 +93,20 @@ func composeServicePortsToK8sContainerPorts(workload *ir.Service) []core.Contain
 	return containerPorts
 }
 
-func composeServiceToSecret(composeService composeTypes.ServiceConfig, refSlug string, labels map[string]string) *core.Secret {
-	if len(composeService.Environment) == 0 {
+func composeServiceToSecret(workload *ir.Service, refSlug string, labels map[string]string) *core.Secret {
+	if len(workload.AsCompose().Environment) == 0 {
 		return nil
 	}
 	stringData := make(map[string]string)
-	for key, value := range composeService.Environment {
+	for key, value := range workload.AsCompose().Environment {
 		stringData[key] = *value
 	}
 	secret := core.Secret{}
 	secret.APIVersion = "v1"
 	secret.Kind = "Secret"
-	secret.Name = composeService.Name + refSlug + "-env"
+	secret.Name = workload.Name + refSlug + "-env"
 	secret.Labels = labels
+	secret.Annotations = util.Annotations(workload.Labels(), "Secret")
 	secret.StringData = stringData
 	return &secret
 }
@@ -122,6 +123,7 @@ func composeServiceToDeployment(
 	deployment.Kind = "Deployment"
 	deployment.Name = workload.AsCompose().Name + refSlug
 	deployment.Labels = labels
+	deployment.Annotations = util.Annotations(workload.Labels(), "Deployment")
 
 	templateSpec, secrets := composeServiceToPodTemplate(
 		workload,
@@ -179,6 +181,7 @@ func composeServiceToStatefulSet(
 	statefulset.Kind = "StatefulSet"
 	statefulset.Name = workload.AsCompose().Name + refSlug
 	statefulset.Labels = labels
+	statefulset.Annotations = util.Annotations(workload.Labels(), "StatefulSet")
 
 	templateSpec, secrets := composeServiceToPodTemplate(
 		workload,
@@ -254,7 +257,8 @@ func composeServiceToPodTemplate(
 	return core.PodTemplateSpec{
 		Spec: podSpec,
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: labels,
+			Labels:      labels,
+			Annotations: util.Annotations(workload.Labels(), "Pod"),
 		},
 	}, secrets
 }
@@ -272,7 +276,7 @@ func composeServiceToContainer(
 	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(workload)
 	containerPorts := composeServicePortsToK8sContainerPorts(workload)
 	resources := composeServiceToResourceRequirements(composeService)
-	secret := composeServiceToSecret(workload.AsCompose(), refSlug, labels)
+	secret := composeServiceToSecret(workload, refSlug, labels)
 	envFrom := []core.EnvFromSource{}
 	if secret != nil {
 		envFrom = append(envFrom, core.EnvFromSource{SecretRef: &core.SecretEnvSource{LocalObjectReference: core.LocalObjectReference{Name: secret.Name}}})
@@ -296,7 +300,7 @@ func composeServiceToContainer(
 	}, secret, volumes
 }
 
-func composeServiceToService(refSlug string, composeService composeTypes.ServiceConfig, servicePorts []core.ServicePort, labels map[string]string) *core.Service {
+func composeServiceToService(refSlug string, workload *ir.Service, servicePorts []core.ServicePort, labels map[string]string) *core.Service {
 	if len(servicePorts) == 0 {
 		return nil
 	}
@@ -308,8 +312,9 @@ func composeServiceToService(refSlug string, composeService composeTypes.Service
 	service.Spec = serviceSpec
 	service.APIVersion = "v1"
 	service.Kind = "Service"
-	service.Name = composeService.Name + refSlug
+	service.Name = workload.Name + refSlug
 	service.Labels = labels
+	service.Annotations = util.Annotations(workload.Labels(), "Service")
 	return &service
 }
 
@@ -386,6 +391,7 @@ func composeServiceToIngress(workload *ir.Service, refSlug string, service *core
 	ingress.Kind = "Ingress"
 	ingress.Name = workload.Name + refSlug
 	ingress.Labels = labels
+	ingress.Annotations = util.Annotations(workload.Labels(), "Ingress")
 	ingress.Spec = networking.IngressSpec{
 		Rules: ingressRules,
 		TLS:   ingressTLSs,
@@ -579,10 +585,8 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 		return objects
 	}
 
-	composeService := workload.AsCompose()
-
 	servicePorts := composeServicePortsToK8sServicePorts(workload)
-	service := composeServiceToService(refSlug, composeService, servicePorts, labels)
+	service := composeServiceToService(refSlug, workload, servicePorts, labels)
 	if service == nil {
 		objects.Services = []core.Service{}
 	} else {

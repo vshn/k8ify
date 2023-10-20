@@ -1,6 +1,8 @@
 package util
 
 import (
+	"fmt"
+	"maps"
 	"os"
 	"regexp"
 	"strconv"
@@ -126,4 +128,11 @@ func ServiceAccountName(labels map[string]string) string {
 		return ""
 	}
 	return *serviceAccountName
+}
+
+func Annotations(labels map[string]string, kind string) map[string]string {
+	annotations := SubConfig(labels, "k8ify.annotations", "")
+	maps.Copy(annotations, SubConfig(labels, fmt.Sprintf("k8ify.%s.annotations", kind), ""))
+	delete(annotations, "")
+	return annotations
 }

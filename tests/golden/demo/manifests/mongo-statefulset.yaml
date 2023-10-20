@@ -1,6 +1,9 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  annotations:
+    helloWorld: Hello World!
+    k8up.io/file-extension: defaultvalue
   creationTimestamp: null
   labels:
     k8ify.service: mongo
@@ -12,6 +15,11 @@ spec:
   serviceName: ""
   template:
     metadata:
+      annotations:
+        helloWorld: Hello World!
+        k8up.io/backupcommand: sh -c 'mongodump --username=$MONGODB_ROOT_USER --password=$MONGODB_ROOT_PASSWORD
+          --archive'
+        k8up.io/file-extension: .archive
       creationTimestamp: null
       labels:
         k8ify.service: mongo
