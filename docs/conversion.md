@@ -99,6 +99,9 @@ metadata:
   # If singleton or no `ref` given: "$name"
   # Otherwise: "$name-$refSlug"
   name: "myapp-feat-foo"  # or "myapp"
+  annotations:
+    # `services.$name.labels["k8ify.annotations"]` merged with `services.$name.labels["k8ify.Deployment.annotations"]` (latter take priority)
+    foo: bar
 spec:
   # `services.$name.deploy.replicas`, defaults to `nil`
   replicas: 2
@@ -114,6 +117,9 @@ spec:
         # modified via the --modified-image argument, this is set to the current
         # timestamp to ensure restarts of all pods
         k8ify.restart-trigger: "1675680748"
+        # Additionally all "Pod" annotations are merged in, i.e.
+        # `services.$name.labels["k8ify.annotations"]` merged with `services.$name.labels["k8ify.Pod.annotations"]` (latter take priority)
+        foo: bar
     spec:
       containers:
           # If singleton or no ref given: `$name`, otherwise: `$name-$refSlug`

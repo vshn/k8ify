@@ -22,6 +22,7 @@ services:
       k8ify.readiness.failureThreshold: 4
       k8ify.startup.path: /health/started
       k8ify.serviceAccountName: portalk8saccess
+      k8ify.Ingress.annotations.cert-manager.io/cluster-issuer: letsencrypt-production
     environment:
       - mongodb_hostname=mongo
       - mongodb_username=portal
@@ -29,6 +30,10 @@ services:
       - mongodb_disable_tls=true
   mongo:
     labels:
+      k8ify.Pod.annotations.k8up.io/backupcommand: "sh -c 'mongodump --username=$$MONGODB_ROOT_USER --password=$$MONGODB_ROOT_PASSWORD --archive'"
+      k8ify.Pod.annotations.k8up.io/file-extension: ".archive"
+      k8ify.annotations.k8up.io/file-extension: "defaultvalue"
+      k8ify.annotations.helloWorld: "Hello World!"
       k8ify.singleton: true
     deploy:
       resources:
