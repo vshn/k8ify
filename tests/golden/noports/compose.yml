@@ -1,4 +1,6 @@
 version: '3.4'
 services:
   pinger:
+    labels:
+      k8ify.Ingress.annotations.cert-manager.io/cluster-issuer: letsencrypt-production
     image: pinger:4.0

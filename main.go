@@ -19,10 +19,9 @@ import (
 
 var (
 	defaultConfig = internal.Config{
-		OutputDir:    "manifests",
-		Env:          "dev",
-		Ref:          "",
-		IngressPatch: converter.IngressPatch{},
+		OutputDir: "manifests",
+		Env:       "dev",
+		Ref:       "",
 	}
 	modifiedImages   internal.ModifiedImagesFlag
 	shellEnvFiles    internal.ShellEnvFilesFlag
@@ -54,7 +53,7 @@ func Main(args []string) int {
 	}
 	plainArgs := pflag.Args()
 
-	config := internal.ConfigMerge(defaultConfig, internal.ReadConfig(".k8ify.defaults.yaml"), internal.ReadConfig(".k8ify.local.yaml"))
+	config := defaultConfig // this code may run multiple times during testing, thus we can't modify the defaults and must create a copy
 	if len(plainArgs) > 0 {
 		config.Env = plainArgs[0]
 	}
@@ -104,7 +103,6 @@ func Main(args []string) int {
 		objects = objects.Append(converter.ComposeServiceToK8s(config.Ref, service, inputs.Volumes))
 	}
 
-	converter.PatchIngresses(objects.Ingresses, config.IngressPatch)
 	forceRestartAnnotation := make(map[string]string)
 	forceRestartAnnotation["k8ify.restart-trigger"] = fmt.Sprintf("%d", time.Now().Unix())
 	converter.PatchDeployments(objects.Deployments, modifiedImages.Values, forceRestartAnnotation)

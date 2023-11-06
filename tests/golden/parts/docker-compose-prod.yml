@@ -10,11 +10,13 @@ services:
           memory: 2G
     labels:
       k8ify.expose.80: 'mywebapp.example.com'
+      k8ify.Ingress.annotations.cert-manager.io/cluster-issuer: letsencrypt-production
   php-backend:
     image: php-backend:prod
     labels:
       k8ify.partOf: nginx-frontend
       k8ify.expose.4480: 'nginx-bypass.mywebapp.example.com'
+      k8ify.Ingress.annotations.cert-manager.io/cluster-issuer: letsencrypt-production
     deploy:
       resources:
         reservations:
