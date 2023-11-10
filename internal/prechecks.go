@@ -1,8 +1,9 @@
 package internal
 
 import (
-	"github.com/vshn/k8ify/pkg/util"
 	"os"
+
+	"github.com/vshn/k8ify/pkg/util"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vshn/k8ify/pkg/ir"
@@ -33,12 +34,18 @@ func ComposeServicePrecheck(inputs *ir.Inputs) {
 		for _, part := range service.GetParts() {
 			partSingleton := util.IsSingleton(part.AsCompose().Labels)
 			if partSingleton && !parentSingleton {
-				logrus.Errorf("Singleton compose service %s can't be part of non-singleton compose service %s", part.Name, service.Name)
+				logrus.Errorf("Singleton compose service '%s' can't be part of non-singleton compose service '%s'", part.Name, service.Name)
 				os.Exit(1)
 			}
 			if !partSingleton && parentSingleton {
-				logrus.Errorf("Non-singleton compose service %s can't be part of singleton compose service %s", part.Name, service.Name)
+				logrus.Errorf("Non-singleton compose service '%s' can't be part of singleton compose service '%s'", part.Name, service.Name)
 				os.Exit(1)
+			}
+		}
+		environmentValues := service.AsCompose().Environment
+		for key, value := range environmentValues {
+			if value == nil {
+				logrus.Warnf("Service '%s' has environment variable '%s' with value nil. There may be a problem with your compose file(s). Please use empty string \"\" values instead.", service.Name, key)
 			}
 		}
 	}

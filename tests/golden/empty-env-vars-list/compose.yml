@@ -1,0 +1,10 @@
+version: '3.4'
+services:
+  pinger:
+    image: pinger:4.0
+    environment:
+      - testempty1=
+      - testempty2=$foo
+      - testempty3=$bar
+      - testnotempty=$baz
+
