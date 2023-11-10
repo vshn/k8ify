@@ -62,21 +62,17 @@ func composeServiceVolumesToK8s(
 
 func composeServicePortsToK8sServicePorts(workload *ir.Service) []core.ServicePort {
 	servicePorts := []core.ServicePort{}
-	ports := workload.AsCompose().Ports
+	ports := workload.GetPorts()
 	// the single k8s service contains the ports of all parts
 	for _, part := range workload.GetParts() {
-		ports = append(ports, part.AsCompose().Ports...)
+		ports = append(ports, part.GetPorts()...)
 	}
 	for _, port := range ports {
-		publishedPort, err := strconv.Atoi(port.Published)
-		if err != nil {
-			publishedPort = int(port.Target)
-		}
 		servicePorts = append(servicePorts, core.ServicePort{
-			Name: fmt.Sprint(publishedPort),
-			Port: int32(publishedPort),
+			Name: fmt.Sprint(port.ServicePort),
+			Port: int32(port.ServicePort),
 			TargetPort: intstr.IntOrString{
-				IntVal: int32(port.Target),
+				IntVal: int32(port.ContainerPort),
 			},
 		})
 	}
@@ -326,27 +322,26 @@ func composeServiceToIngress(workload *ir.Service, refSlug string, service *core
 	if service == nil {
 		return nil
 	}
-	composeServices := []composeTypes.ServiceConfig{workload.AsCompose()}
-	for _, w := range workload.GetParts() {
-		composeServices = append(composeServices, w.AsCompose())
-	}
+
+	workloads := []*ir.Service{workload}
+	workloads = append(workloads, workload.GetParts()...)
 
 	var ingressRules []networking.IngressRule
 	var ingressTLSs []networking.IngressTLS
 
-	for _, composeService := range composeServices {
-		for i, port := range service.Spec.Ports {
+	for _, w := range workloads {
+		for i, port := range w.GetPorts() {
 			// we expect the config to be in "k8ify.expose.PORT"
-			configPrefix := fmt.Sprintf("k8ify.expose.%d", port.Port)
-			ingressConfig := util.SubConfig(composeService.Labels, configPrefix, "host")
+			configPrefix := fmt.Sprintf("k8ify.expose.%d", port.ServicePort)
+			ingressConfig := util.SubConfig(w.Labels(), configPrefix, "host")
 			if _, ok := ingressConfig["host"]; !ok && i == 0 {
 				// for the first port we also accept config in "k8ify.expose"
-				ingressConfig = util.SubConfig(composeService.Labels, "k8ify.expose", "host")
+				ingressConfig = util.SubConfig(w.Labels(), "k8ify.expose", "host")
 			}
 
 			if host, ok := ingressConfig["host"]; ok {
 				serviceBackendPort := networking.ServiceBackendPort{
-					Number: service.Spec.Ports[i].Port,
+					Number: int32(port.ServicePort),
 				}
 
 				ingressServiceBackend := networking.IngressServiceBackend{

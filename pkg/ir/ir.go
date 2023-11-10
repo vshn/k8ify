@@ -4,6 +4,8 @@ import (
 	composeTypes "github.com/compose-spec/compose-go/types"
 	"github.com/vshn/k8ify/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"strconv"
+	"strings"
 )
 
 type Inputs struct {
@@ -117,6 +119,31 @@ func (s *Service) IsSingleton() bool {
 }
 func (s *Service) Labels() map[string]string {
 	return s.raw.Labels
+}
+
+type PublishedPort struct {
+	ServicePort   uint16
+	ContainerPort uint16
+}
+
+func (s *Service) GetPorts() []PublishedPort {
+	var publishedPorts []PublishedPort
+	for _, port := range s.raw.Ports {
+		publishedPort := PublishedPort{
+			ServicePort:   uint16(port.Target), // fall-back
+			ContainerPort: uint16(port.Target),
+		}
+		// port.Published can contain a range. Since we can't use this range for k8s we always use the start of the range instead.
+		portRange := strings.Split(port.Published, "-")
+		if len(portRange) > 0 {
+			p, err := strconv.ParseUint(portRange[0], 10, 16)
+			if err == nil {
+				publishedPort.ServicePort = uint16(p)
+			}
+		}
+		publishedPorts = append(publishedPorts, publishedPort)
+	}
+	return publishedPorts
 }
 
 // Volume provides some k8ify-specific abstractions & utility around Compose
