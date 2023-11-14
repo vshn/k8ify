@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: nginx-frontend
+  name: nginx-frontend-oasp
+spec:
+  rules:
+  - host: nginx-bypass.mywebapp.example.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: nginx-frontend-oasp
+            port:
+              number: 1180
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - nginx-bypass.mywebapp.example.com
+    secretName: nginx-frontend-oasp
+status:
+  loadBalancer: {}

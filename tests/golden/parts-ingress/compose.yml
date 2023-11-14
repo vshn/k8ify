@@ -1,0 +1,13 @@
+version: '3.4'
+services:
+  nginx-frontend:
+    ports:
+      - "80:80"
+    image: nginx-frontend:prod
+  php-backend:
+    image: php-backend:prod
+    labels:
+      k8ify.partOf: nginx-frontend
+      k8ify.expose: 'nginx-bypass.mywebapp.example.com'
+    ports:
+      - "1180-1190:4480"
