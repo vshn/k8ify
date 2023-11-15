@@ -300,25 +300,74 @@ func composeServiceToContainer(
 	}, secret, volumes
 }
 
-func composeServiceToService(refSlug string, workload *ir.Service, servicePorts []core.ServicePort, labels map[string]string) *core.Service {
-	if len(servicePorts) == 0 {
-		return nil
-	}
-	serviceSpec := core.ServiceSpec{
-		Ports:    servicePorts,
-		Selector: labels,
+func serviceSpecToService(refSlug string, workload *ir.Service, serviceSpec core.ServiceSpec, labels map[string]string) core.Service {
+	serviceName := workload.Name + refSlug
+	// We only add the port numbers to the service name if the ports are exposed directly. This is to ensure backwards compatibility with previous versions of k8ify and to keep things neat (not many people will need to expose ports directly).
+	if !serviceSpecIsUnexposedDefault(serviceSpec) {
+		for _, port := range serviceSpec.Ports {
+			serviceName = fmt.Sprintf("%s-%d", serviceName, port.Port)
+		}
 	}
 	service := core.Service{}
 	service.Spec = serviceSpec
 	service.APIVersion = "v1"
 	service.Kind = "Service"
-	service.Name = workload.Name + refSlug
+	service.Name = serviceName
 	service.Labels = labels
 	service.Annotations = util.Annotations(workload.Labels(), "Service")
-	return &service
+	return service
 }
 
-func composeServiceToIngress(workload *ir.Service, refSlug string, service *core.Service, labels map[string]string) *networking.Ingress {
+// PortConfig only exists to be used as a map key (we can't use core.ServiceSpec)
+type PortConfig struct {
+	Type                  core.ServiceType
+	ExternalTrafficPolicy core.ServiceExternalTrafficPolicy
+	HealthCheckNodePort   int32
+}
+
+func serviceSpecIsUnexposedDefault(serviceSpec core.ServiceSpec) bool {
+	return serviceSpec.Type == "" && serviceSpec.ExternalTrafficPolicy == "" && serviceSpec.HealthCheckNodePort == 0
+}
+
+func composeServiceToServices(refSlug string, workload *ir.Service, servicePorts []core.ServicePort, labels map[string]string) []core.Service {
+	var services []core.Service
+	serviceSpecs := map[PortConfig]core.ServiceSpec{}
+
+	for _, servicePort := range servicePorts {
+		portConfig := PortConfig{
+			Type:                  util.ServiceType(workload.Labels(), servicePort.Port),
+			ExternalTrafficPolicy: util.ServiceExternalTrafficPolicy(workload.Labels(), servicePort.Port),
+			HealthCheckNodePort:   util.ServiceHealthCheckNodePort(workload.Labels(), servicePort.Port),
+		}
+		spec, specExists := serviceSpecs[portConfig]
+		if specExists {
+			spec.Ports = append(serviceSpecs[portConfig].Ports, servicePort)
+			serviceSpecs[portConfig] = spec
+		} else {
+			serviceSpecs[portConfig] = core.ServiceSpec{
+				Selector:              labels,
+				Type:                  portConfig.Type,
+				ExternalTrafficPolicy: portConfig.ExternalTrafficPolicy,
+				HealthCheckNodePort:   portConfig.HealthCheckNodePort,
+				Ports:                 []core.ServicePort{servicePort},
+			}
+		}
+	}
+
+	for _, serviceSpec := range serviceSpecs {
+		services = append(services, serviceSpecToService(refSlug, workload, serviceSpec, labels))
+	}
+
+	return services
+}
+
+func composeServiceToIngress(workload *ir.Service, refSlug string, services []core.Service, labels map[string]string) *networking.Ingress {
+	var service *core.Service
+	for _, s := range services {
+		if serviceSpecIsUnexposedDefault(s.Spec) {
+			service = &s
+		}
+	}
 	if service == nil {
 		return nil
 	}
@@ -585,12 +634,7 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 	}
 
 	servicePorts := composeServicePortsToK8sServicePorts(workload)
-	service := composeServiceToService(refSlug, workload, servicePorts, labels)
-	if service == nil {
-		objects.Services = []core.Service{}
-	} else {
-		objects.Services = []core.Service{*service}
-	}
+	objects.Services = composeServiceToServices(refSlug, workload, servicePorts, labels)
 
 	// Find volumes used by this service and all its parts
 	rwoVolumes, rwxVolumes := workload.Volumes(projectVolumes)
@@ -638,7 +682,7 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 		objects.Secrets = secrets
 	}
 
-	ingress := composeServiceToIngress(workload, refSlug, service, labels)
+	ingress := composeServiceToIngress(workload, refSlug, objects.Services, labels)
 	if ingress == nil {
 		objects.Ingresses = []networking.Ingress{}
 	} else {

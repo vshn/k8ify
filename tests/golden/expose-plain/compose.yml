@@ -1,0 +1,15 @@
+services:
+  nginx:
+    labels:
+      k8ify.exposePlain.443: true
+      k8ify.exposePlain.443.externalTrafficPolicy: Cluster
+      k8ify.exposePlain.443.healthCheckNodePort: 55667
+      k8ify.exposePlain.22: true
+      k8ify.exposePlain.21: true
+    image: docker.io/library/nginx
+    ports:
+      - '88:8888'
+      - '80:8080'
+      - '443:8443'
+      - '22:2222'
+      - '21:2221'

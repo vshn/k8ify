@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	core "k8s.io/api/core/v1"
 	"maps"
 	"os"
 	"regexp"
@@ -135,4 +136,56 @@ func Annotations(labels map[string]string, kind string) map[string]string {
 	maps.Copy(annotations, SubConfig(labels, fmt.Sprintf("k8ify.%s.annotations", kind), ""))
 	delete(annotations, "")
 	return annotations
+}
+
+func ServiceType(labels map[string]string, port int32) core.ServiceType {
+	subConfig := SubConfig(labels, fmt.Sprintf("k8ify.exposePlain.%d", port), "")
+	if len(subConfig) == 0 {
+		return ""
+	}
+	if serviceType, ok := subConfig["type"]; ok {
+		// Go does not offer a way to list values of its "ENUMs", see https://github.com/golang/go/issues/19814
+		if serviceType == string(core.ServiceTypeClusterIP) {
+			return core.ServiceTypeClusterIP
+		}
+		if serviceType == string(core.ServiceTypeLoadBalancer) {
+			return core.ServiceTypeLoadBalancer
+		}
+		if serviceType == string(core.ServiceTypeExternalName) {
+			return core.ServiceTypeExternalName
+		}
+		if serviceType == string(core.ServiceTypeNodePort) {
+			return core.ServiceTypeNodePort
+		}
+	}
+	return core.ServiceTypeLoadBalancer
+}
+
+func ServiceExternalTrafficPolicy(labels map[string]string, port int32) core.ServiceExternalTrafficPolicy {
+	subConfig := SubConfig(labels, fmt.Sprintf("k8ify.exposePlain.%d", port), "")
+	if len(subConfig) == 0 {
+		return ""
+	}
+	if serviceType, ok := subConfig["externalTrafficPolicy"]; ok {
+		// Go does not offer a way to list values of its "ENUMs", see https://github.com/golang/go/issues/19814
+		if serviceType == string(core.ServiceExternalTrafficPolicyCluster) {
+			return core.ServiceExternalTrafficPolicyCluster
+		}
+		if serviceType == string(core.ServiceExternalTrafficPolicyLocal) {
+			return core.ServiceExternalTrafficPolicyLocal
+		}
+	}
+	return core.ServiceExternalTrafficPolicyLocal
+}
+
+func ServiceHealthCheckNodePort(labels map[string]string, port int32) int32 {
+	subConfig := SubConfig(labels, fmt.Sprintf("k8ify.exposePlain.%d", port), "")
+	if len(subConfig) == 0 {
+		return 0
+	}
+	healthCheckNodePort := ConfigGetInt32(subConfig, "healthCheckNodePort", 0)
+	if healthCheckNodePort > 65535 || healthCheckNodePort < 0 {
+		return 0
+	}
+	return healthCheckNodePort
 }
