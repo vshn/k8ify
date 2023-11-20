@@ -1,0 +1,10 @@
+services:
+  nginx:
+    labels:
+      k8ify.expose: foo.apps.cluster.net
+    image: docker.io/library/nginx
+    ports:
+      - '8080:80'
+
+x-targetCfg:
+  appsDomain: "*.apps.cluster.net"

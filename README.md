@@ -146,6 +146,14 @@ This replaces the TCP based health check by a more specific HTTP(S) check.
 | `k8ify.readiness.*` | All the sub-values work the same as for `k8ify.liveness` incl. defaults. No values are copied over. However the readiness check is disabled by default. |
 | `k8ify.readiness.enabled: false` | Enable or disable the readiness check. Default is false. |
 
+#### Target Cluster Configuration
+
+There are some cases in which the output of k8ify needs to be different based on the target cluster's configuration. To make this work some properties of the target cluster can be configured via the `x-targetCfg` root key in the compose file.
+
+| Key  | Effect  |
+| ---- | ------- |
+| `appsDomain: $domain`  | A cluster may have a wildcard certificate for apps to use. If you configure this option and expose a service using `$domain`, the resulting Ingress uses this wildcard certificate (instead of e.g. Let's Encrypt). |
+| `maxExposeLength: $length`  | k8ify does a length check on the exposed domain names, because if they're too long the Ingress will not work. Default is 63.  |
 
 ## Conversion
 

@@ -361,7 +361,7 @@ func composeServiceToServices(refSlug string, workload *ir.Service, servicePorts
 	return services
 }
 
-func composeServiceToIngress(workload *ir.Service, refSlug string, services []core.Service, labels map[string]string) *networking.Ingress {
+func composeServiceToIngress(workload *ir.Service, refSlug string, services []core.Service, labels map[string]string, targetCfg ir.TargetCfg) *networking.Ingress {
 	var service *core.Service
 	for _, s := range services {
 		if serviceSpecIsUnexposedDefault(s.Spec) {
@@ -422,10 +422,15 @@ func composeServiceToIngress(workload *ir.Service, refSlug string, services []co
 					IngressRuleValue: ingressRuleValue,
 				})
 
-				ingressTLSs = append(ingressTLSs, networking.IngressTLS{
-					Hosts:      []string{host},
-					SecretName: workload.Name + refSlug,
-				})
+				if targetCfg.IsSubdomainOfAppsDomain(host) {
+					// special case: With an empty TLS configuration the ingress uses the cluster-wide apps domain wildcard certificate
+					ingressTLSs = append(ingressTLSs, networking.IngressTLS{})
+				} else {
+					ingressTLSs = append(ingressTLSs, networking.IngressTLS{
+						Hosts:      []string{host},
+						SecretName: workload.Name + refSlug,
+					})
+				}
 			}
 		}
 	}
@@ -606,7 +611,7 @@ func CallExternalConverter(resourceName string, options map[string]string) (unst
 	return otherResource, nil
 }
 
-func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[string]*ir.Volume) Objects {
+func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[string]*ir.Volume, targetCfg ir.TargetCfg) Objects {
 	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 4), workload)
 	labels := make(map[string]string)
 	labels["k8ify.service"] = workload.Name
@@ -690,7 +695,7 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 		objects.Secrets = secrets
 	}
 
-	ingress := composeServiceToIngress(workload, refSlug, objects.Services, labels)
+	ingress := composeServiceToIngress(workload, refSlug, objects.Services, labels, targetCfg)
 	if ingress == nil {
 		objects.Ingresses = []networking.Ingress{}
 	} else {
