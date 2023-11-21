@@ -629,6 +629,14 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 				otherResource.GetLabels()[k] = v
 			}
 		}
+		annotations := util.Annotations(workload.Labels(), otherResource.GetKind())
+		if otherResource.GetAnnotations() == nil {
+			otherResource.SetAnnotations(annotations)
+		} else {
+			for k, v := range annotations {
+				otherResource.GetAnnotations()[k] = v
+			}
+		}
 		objects.Others = append([]unstructured.Unstructured{}, otherResource)
 		return objects
 	}
