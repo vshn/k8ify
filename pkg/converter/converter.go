@@ -25,6 +25,10 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+var (
+	SecretRefMagic = "ylkBUFN0o29yr4yLCTUZqzgIT6qCIbyj" // magic string to indicate that what follows isn't a value but a reference to a secret
+)
+
 func composeServiceVolumesToK8s(
 	refSlug string,
 	mounts []composeTypes.ServiceVolumeConfig,
@@ -90,16 +94,20 @@ func composeServicePortsToK8sContainerPorts(workload *ir.Service) []core.Contain
 }
 
 func composeServiceToSecret(workload *ir.Service, refSlug string, labels map[string]string) *core.Secret {
-	if len(workload.AsCompose().Environment) == 0 {
-		return nil
-	}
 	stringData := make(map[string]string)
 	for key, value := range workload.AsCompose().Environment {
+		if value != nil && strings.HasPrefix(*value, SecretRefMagic+":") {
+			// we've encountered a reference to another secret (starting with "$_ref_:" in the compose file), ignore
+			continue
+		}
 		if value == nil {
 			stringData[key] = ""
 		} else {
 			stringData[key] = *value
 		}
+	}
+	if len(stringData) == 0 {
+		return nil
 	}
 	secret := core.Secret{}
 	secret.APIVersion = "v1"
@@ -281,6 +289,19 @@ func composeServiceToContainer(
 	if secret != nil {
 		envFrom = append(envFrom, core.EnvFromSource{SecretRef: &core.SecretEnvSource{LocalObjectReference: core.LocalObjectReference{Name: secret.Name}}})
 	}
+	env := []core.EnvVar{}
+	for key, value := range workload.AsCompose().Environment {
+		if value != nil && strings.HasPrefix(*value, SecretRefMagic+":") {
+			// we've encountered a reference to another secret (starting with "$_ref_:" in the compose file)
+			refValue := (*value)[len(SecretRefMagic)+1:]
+			refStrings := strings.SplitN(refValue, ":", 2)
+			if len(refStrings) != 2 {
+				logrus.Warnf("Secret reference '$_ref_:%s' has invalid format, should be '$_ref_:SECRETNAME:KEY'. Ignoring.", refValue)
+				continue
+			}
+			env = append(env, core.EnvVar{Name: key, ValueFrom: &core.EnvVarSource{SecretKeyRef: &core.SecretKeySelector{LocalObjectReference: core.LocalObjectReference{Name: refStrings[0]}, Key: refStrings[1]}}})
+		}
+	}
 	return core.Container{
 		Name:  composeService.Name + refSlug,
 		Image: composeService.Image,
@@ -289,6 +310,7 @@ func composeServiceToContainer(
 		// Env:          envVars,
 		// Reference the secret:
 		EnvFrom:         envFrom,
+		Env:             env,
 		VolumeMounts:    volumeMounts,
 		LivenessProbe:   livenessProbe,
 		ReadinessProbe:  readinessProbe,

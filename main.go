@@ -83,9 +83,15 @@ func Main(args []string) int {
 			})
 		}
 	}
+	env := util.GetEnv()
+	if _, ok := env["_ref_"]; ok {
+		logrus.Error("The environment variable '_ref_' must not be defined as it is needed for internal purposes")
+		return 1
+	}
+	env["_ref_"] = converter.SecretRefMagic
 	configDetails := composeTypes.ConfigDetails{
 		ConfigFiles: composeConfigFiles,
-		Environment: util.GetEnv(),
+		Environment: env,
 	}
 	project, err := composeLoader.Load(configDetails)
 	if err != nil {

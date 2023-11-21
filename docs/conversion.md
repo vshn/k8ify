@@ -134,6 +134,16 @@ spec:
             - secretRef:
                 # `$name(-$refSlug)-env`
                 name: "myapp-feat-foo-env"
+          # To reference a value in a secret you need to use a special syntax in `services.$name.environment`:
+          # If an environment value starts with a literal '$_ref_:', it is interpreted as a secret reference.
+          # Example which would generate the secretRef shown below:
+          # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
+          env:
+            - DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-credentials-secret
+                  key: password
           # List of the target port values from `services.$name.ports`
           ports:
             - containerPort: 8000
@@ -234,6 +244,16 @@ spec:
             - secretRef:
                 # `$name(-$refSlug)-env`
                 name: "myapp-feat-foo-env"
+          # To reference a value in a secret you need to use a special syntax in `services.$name.environment`:
+          # If an environment value starts with a literal '$_ref_:', it is interpreted as a secret reference.
+          # Example which would generate the secretRef shown below:
+          # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
+          env:
+            - DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-credentials-secret
+                  key: password
           # List of the target port values from `services.$name.ports`
           ports:
             - containerPort: 8000

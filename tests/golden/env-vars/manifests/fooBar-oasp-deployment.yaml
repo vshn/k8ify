@@ -21,7 +21,13 @@ spec:
         k8ify.service: fooBar
     spec:
       containers:
-      - envFrom:
+      - env:
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: mongodb-secret
+        envFrom:
         - secretRef:
             name: fooBar-oasp-env
         image: foo
