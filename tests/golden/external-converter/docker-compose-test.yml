@@ -3,3 +3,4 @@ services:
     labels:
       k8ify.converter: ./managed-mongodb.sh
       k8ify.converter.plan: xxlarge
+      k8ify.ManagedMongoDB.annotations.foo: bar

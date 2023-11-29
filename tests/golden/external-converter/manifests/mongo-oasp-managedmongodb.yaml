@@ -1,6 +1,9 @@
 apiVersion: mongodb.appcat.vshn.io/v1
 kind: ManagedMongoDB
 metadata:
+  annotations:
+    abc: def
+    foo: bar
   labels:
     k8ify.ref-slug: oasp
     k8ify.service: mongo

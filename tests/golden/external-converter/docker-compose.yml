@@ -1,6 +1,8 @@
 version: '3.4'
 services:
   mongo:
+    labels:
+      k8ify.annotations.abc: def
     image: mongo:4
     volumes:
       - mongo-data:/var/lib/mongodb
