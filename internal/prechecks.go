@@ -106,3 +106,16 @@ func VolumesPrecheck(inputs *ir.Inputs) {
 		}
 	}
 }
+
+func DomainLengthPrecheck(inputs *ir.Inputs) {
+	maxExposeLength := inputs.TargetCfg.MaxExposeLength()
+	for _, service := range inputs.Services {
+		for _, domain := range util.SubConfig(service.Labels(), "k8ify.expose", "default") {
+			if !inputs.TargetCfg.IsSubdomainOfAppsDomain(domain) && len(domain) > maxExposeLength {
+				logrus.Errorf("Service '%s' is supposed to be exposed on domain '%s' which is longer than %d characters. This likely won't work due to certificate common name length restrictions.", service.Name, domain, maxExposeLength)
+				logrus.Errorf("To fix this you can use the cluster's appsDomain wildcard certificate (compose file option 'x-targetCfg.appsDomain') or adjust this check ('x-targetCfg.maxExposeLength').")
+				os.Exit(1)
+			}
+		}
+	}
+}

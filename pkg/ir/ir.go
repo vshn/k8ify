@@ -9,8 +9,9 @@ import (
 )
 
 type Inputs struct {
-	Services map[string]*Service
-	Volumes  map[string]*Volume
+	Services  map[string]*Service
+	Volumes   map[string]*Volume
+	TargetCfg TargetCfg
 }
 
 func NewInputs() *Inputs {
@@ -51,6 +52,12 @@ func FromCompose(project *composeTypes.Project) *Inputs {
 		// `volume.Name` is something else (the name prefixed with `_`???). So
 		// we use the key as the name.
 		inputs.Volumes[name] = NewVolume(name, composeVolume)
+	}
+
+	if targetCfg, ok := project.Extensions["x-targetCfg"]; ok {
+		if targetCfgMap, ok := targetCfg.(map[string]interface{}); ok {
+			inputs.TargetCfg = targetCfgMap
+		}
 	}
 
 	return inputs
@@ -176,4 +183,45 @@ func (v *Volume) Size(fallback string) resource.Quantity {
 }
 func (v *Volume) SizeIsMissing() bool {
 	return util.StorageSizeRaw(v.raw.Labels) == nil
+}
+
+type TargetCfg map[string]interface{}
+
+func (t TargetCfg) appsDomain() *string {
+	if value, ok := t["appsDomain"]; ok {
+		if domain, ok := value.(string); ok {
+			if strings.HasPrefix(domain, "*.") {
+				domain = domain[1:]
+			}
+			if !strings.HasPrefix(domain, ".") {
+				domain = "." + domain
+			}
+			if len(domain) < 2 {
+				return nil
+			}
+			return &domain
+		}
+	}
+	return nil
+}
+
+func (t TargetCfg) IsSubdomainOfAppsDomain(domain string) bool {
+	appsDomain := t.appsDomain()
+	if appsDomain == nil || domain == "" {
+		return false
+	}
+	domainComponents := strings.Split(domain, ".")
+	if len(domainComponents) < 2 {
+		return false
+	}
+	return domainComponents[0]+*appsDomain == domain
+}
+
+func (t TargetCfg) MaxExposeLength() int {
+	if value, ok := t["maxExposeLength"]; ok {
+		if length, ok := value.(int); ok {
+			return length
+		}
+	}
+	return 63
 }

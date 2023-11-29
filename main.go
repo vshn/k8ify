@@ -96,11 +96,12 @@ func Main(args []string) int {
 	inputs := ir.FromCompose(project)
 	internal.ComposeServicePrecheck(inputs)
 	internal.VolumesPrecheck(inputs)
+	internal.DomainLengthPrecheck(inputs)
 
 	objects := converter.Objects{}
 
 	for _, service := range inputs.Services {
-		objects = objects.Append(converter.ComposeServiceToK8s(config.Ref, service, inputs.Volumes))
+		objects = objects.Append(converter.ComposeServiceToK8s(config.Ref, service, inputs.Volumes, inputs.TargetCfg))
 	}
 
 	forceRestartAnnotation := make(map[string]string)
