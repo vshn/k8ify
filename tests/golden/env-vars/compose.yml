@@ -5,3 +5,4 @@ services:
       - FOO
       - BAR=${BAR}
       - something_else=${BAZ}
+      - "PASSWORD=$_ref_:mongodb-secret:password"
