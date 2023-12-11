@@ -154,6 +154,8 @@ There are some cases in which the output of k8ify needs to be different based on
 | ---- | ------- |
 | `appsDomain: $domain`  | A cluster may have a wildcard certificate for apps to use. If you configure this option and expose a service using `$domain`, the resulting Ingress uses this wildcard certificate (instead of e.g. Let's Encrypt). |
 | `maxExposeLength: $length`  | k8ify does a length check on the exposed domain names, because if they're too long the Ingress will not work. Default is 63.  |
+| `encryptedVolumeScheme: $provider`  | The implementation of encrypted volumes is provider specific. Use this to enable support for a provider. See [Provider](.docs/provider.md) for more information.  |
+
 
 ## Conversion
 
@@ -163,11 +165,6 @@ The conversion process is documented in-depth in [Conversion](./docs/conversion.
 ## Storage
 
 Storage support is documented in-depth in [Storage](./docs/storage.md).
-
-
-## Provider-Specific Features
-
-While k8ify tries to be provider agnostic, some features do depend on the target k8s setup. These are described in [Provider](./docs/provider.md).
 
 
 ## Testing

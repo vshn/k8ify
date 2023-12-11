@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/vshn/k8ify/pkg/ir"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -11,14 +12,17 @@ import (
 	core "k8s.io/api/core/v1"
 )
 
-func PatchAppuioCloudscale(provider string, config internal.Config, objects converter.Objects) converter.Objects {
-	if provider != "appuio-cloudscale" {
-		return objects
+func PatchEncryptedVolumeSchemeAppuioCloudscale(targetCfg ir.TargetCfg, config internal.Config, objects converter.Objects) converter.Objects {
+	if encryptedVolumeScheme, ok := targetCfg["encryptedVolumeScheme"]; ok {
+		if encryptedVolumeScheme == "appuio-cloudscale" {
+			return patchEncryptedVolumeScheme(config, objects)
+		}
 	}
-	return patchEncryptedPersistentVolumeClaims(config, objects)
+
+	return objects
 }
 
-func patchEncryptedPersistentVolumeClaims(config internal.Config, objects converter.Objects) converter.Objects {
+func patchEncryptedVolumeScheme(config internal.Config, objects converter.Objects) converter.Objects {
 	luksSecrets := []core.Secret{}
 	for _, pvc := range objects.PersistentVolumeClaims {
 		if pvc.Spec.StorageClassName != nil && (*pvc.Spec.StorageClassName == "ssd-encrypted" || *pvc.Spec.StorageClassName == "bulk-encrypted") {

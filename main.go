@@ -25,7 +25,6 @@ var (
 	}
 	modifiedImages   internal.ModifiedImagesFlag
 	shellEnvFiles    internal.ShellEnvFilesFlag
-	dstProvider      internal.ProviderFlag
 	pflagInitialized = false
 )
 
@@ -34,7 +33,6 @@ func InitPflag() {
 	if !pflagInitialized {
 		pflag.Var(&modifiedImages, "modified-image", "Image that has been modified during the build. Can be repeated.")
 		pflag.Var(&shellEnvFiles, "shell-env-file", "Shell environment file ('key=value' format) to be used in addition to the current shell environment. Can be repeated.")
-		pflag.Var(&dstProvider, "provider", "Select Kubernetes provider in order to use provider-specific features")
 		pflagInitialized = true
 	}
 }
@@ -115,7 +113,7 @@ func Main(args []string) int {
 	converter.PatchDeployments(objects.Deployments, modifiedImages.Values, forceRestartAnnotation)
 	converter.PatchStatefulSets(objects.StatefulSets, modifiedImages.Values, forceRestartAnnotation)
 
-	objects = provider.PatchAppuioCloudscale(dstProvider.String(), config, objects)
+	objects = provider.PatchEncryptedVolumeSchemeAppuioCloudscale(inputs.TargetCfg, config, objects)
 
 	err = internal.WriteManifests(config.OutputDir, objects)
 	if err != nil {

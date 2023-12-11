@@ -42,3 +42,6 @@ volumes:
     labels:
       k8ify.singleton: true
       k8ify.storageClass: ssd-encrypted
+
+x-targetCfg:
+  encryptedVolumeScheme: appuio-cloudscale
