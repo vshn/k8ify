@@ -2,7 +2,7 @@
 
 `k8ify` converts [**Compose**][Compose] files into **Kubernetes** manifests.
 
-**Warning:** This tool is currently under heavy development. Stuff may change & break between releases!
+This project adheres to [Semantic Versioning][SemVer] and tries to not break functionality between major versions.
 
 
 ## Goal & Purpose
@@ -204,3 +204,4 @@ This project is licensed under the [BSD 3-Clause License](LICENSE)
 
 [Compose]: https://github.com/compose-spec/compose-spec/blob/master/spec.md
 [Kompose]: https://kompose.io/
+[SemVer]: https://semver.org/
