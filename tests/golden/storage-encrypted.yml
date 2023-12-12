@@ -6,6 +6,3 @@ environments:
       default_shared_data_oasp_luks_key_prod: 'passw1rd'
       shared_data_oasp_luks_key_prod: 'passw2rd'
       singleton_db_storage_singleton_db_0_luks_key_prod: 'passw3rd'
-    params:
-      - '--provider'
-      - 'appuio-cloudscale'
