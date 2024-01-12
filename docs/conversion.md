@@ -1,65 +1,65 @@
 # Conversion
 
-This document describes the conversion process `k8ify` applies to convert Compose files to Kubernetes manifests.
+This document describes the conversion process applied by `k8ify` to convert Compose files to K8s manifests.
 
-Compose files define "compose services". Every compose service is translated into Kubernetes resources individually.
+Compose files define "Compose services". Every Compose service is translated into K8s resources individually (some exceptions apply).
 
-In general, every compose service is implemented as a Deployment (or StatefulSet, see below), exposed ports are exposed as Services, volumes are mapped to Persistent Volume Claims (which make Kubernetes provide Persistent Volumes) and environment variables are saved into secrets. Services may further be exposed via Ingresses.
+In general, every Compose service is implemented as a Deployment (or StatefulSet, see below), exposed ports are exposed as Services, volumes are mapped to PersistentVolumeClaims (which make K8s provide PersistentVolumes) and environment variables are saved into Secrets. Services may further be exposed via Ingresses.
 
-This results in the following list of Kubernetes resource for each compose service:
+This results in the following list of K8s resource for each Compose service:
 
-* 1 Workload ([`Deployment`](#k8s-deployment) or [`StatefulSet`](#k8s-statefulset))
-* 0-1 [`Service`](#k8s-service) (a single service can cover multiple ports; if no ports are exposed no service is created)
-* 1 [`Secret`](#k8s-secret) (may be empty)
-* 0-n [`PersistentVolumeClaim`](#k8s-persistentvolumeclaim) (optionally one per volume)
-* 0-n [`Ingress`](#k8s-ingress) (one per port, IF enabled via `k8ify.expose` label on the compose service)
+* 0-1 Workloads ([`Deployment`](#k8s-deployment) or [`StatefulSet`](#k8s-statefulset)) (if `k8ify.partOf` is used then the Compose service is merged into another workload)
+* 0-1 [`Services`](#k8s-service) (a single Service can cover multiple ports; if no ports are exposed no Service is created)
+* 0-1 [`Secrets`](#k8s-secret)
+* 0-n [`PersistentVolumeClaims`](#k8s-persistentvolumeclaim) (optionally one per volume)
+* 0-n [`Ingresses`](#k8s-ingress) (one per port, IF enabled via `k8ify.expose` label on the Compose service)
 
 
-### Special considerations
+### Special Considerations
 
-Some compose concepts don't match neatly onto Kubernetes concepts, so some special care must be taken.
+Some Compose concepts don't translate neatly to K8s concepts, therefore some special care must be taken.
 
 #### Ingress
 
-In order to make a service available to the outside world, we need to support Ingresses. However, compose files have no notion of "available to the outside world", hence there is no direct way of generating an Ingress from the data in a compose file. Hence, setting up Ingresses is implemented via compose service labels (see [Labels](../README.md#labels)).
+In order to make a Service available to the outside world, we need to support Ingresses. However, Compose files have no notion of "available to the outside world", hence there is no direct way of generating an Ingress from the data in a Compose file. Hence setting up Ingresses is implemented via Compose service labels (see [Labels](../README.md#labels)).
 
 
-#### Environment variables and Secrets
+#### Environment Variables and Secrets
 
-Compose supports secrets and environment variables. However, the "secret" support is limited to file-based secrets, which are inherently incompatible with the Twelve-Factor Application principles, thus we don't want to use these.
+Compose supports secrets and environment variables. However the "secret" support is limited to file-based secrets, which are inherently incompatible with the Twelve-Factor Application principles, thus we don't want to use these.
 
-Instead, we only use the "environment" functionality of compose. However, environment variables can contain sensitive information, and we don't know which ones do and which ones don't. Thus, the conversion does not store any environment variables in the deployment, but puts a secretRef in there and then writes all environment variables to one secret per compose service.
+Instead we only use the "environment" functionality of Compose. But environment variables can contain sensitive information, and we don't know which ones do and which ones don't. Thus the conversion does not store any environment variables in the Deployment or StatefulSet, but puts a secretRef in there and then writes all environment variables to one Secret per Compose service.
 
 
 #### Volumes
 
-Only volumes defined in the `volumes` topl level section of the Compose files are taken into consideration. Local bind mounts or `tmpfs` mounts are ignored.
+Only volumes defined in the `volumes` top level section of the Compose files are taken into consideration. Local bind mounts or `tmpfs` mounts are ignored.
 
 By default Volumes will be assigned the `ReadWriteOnce` access mode to prevent multiple instances of an application writing to the same storage location.
 
-This chan be changed to `ReadWriteMany` by adding the label `k8ify.shared: true` to the volume.
+This can be changed to `ReadWriteMany` by adding the label `k8ify.shared: true` to the volume.
 
+See [Storage](./storage.md) for a more detailed explanation.
 
 #### Deployments vs. StatefulSets
 
-By default, a compose service will be translated into a `Deployment`.
+By default a Compose service will be translated to a `Deployment`. If a Compose service only uses shared (`ReadWriteMany`) volumes, it will still be translated to a `Deployment`.
 
-If the compose service has non-shared (`ReadWriteOnce`) volumes mounted, a `StatefulSet` is used instead. This results in every replica getting its own `ReadWriteOnce` PersistentVolume.
+If the Compose service has non-shared (`ReadWriteOnce`) volumes mounted, a `StatefulSet` is used instead. This results in every replica getting its own `ReadWriteOnce` PersistentVolume.
 
-If a compose service only uses shared (`ReadWriteMany`) volumes, it will still be translated into a `Deployment`.
-
+See [Storage](./storage.md) for a more detailed explanation.
 
 #### Labels
 
-Note that K8ify works with both Labels on Compose services (set in Compose files under `services.$name.labels`) and Kubernetes resource labels (set on individual resources under `metadata.labels`).
-Labels are not automatically copied from Compose files to Kubernetes manifests.
-Instead, the two concepts are used for different purposes:
+Note that k8ify works with both Labels on Compose services (set in Compose files under `services.$name.labels`) and K8s resource labels (set on individual resources under `metadata.labels`).
+A user of k8ify will normally only work with the Compose service labels and not with the K8s resource labels.
+Labels are not automatically copied from Compose files to K8s manifests. Instead the two concepts are used for different purposes:
 
-Labels on **Compose services** and **volumes** are used to **configure** and customize manifest generation.
+Labels on **Compose services** and **Compose volumes** are used to **configure** and customize manifest generation. They are used to extend the functionality of the Compose file format.
 
-Labels on the generated **Kubernetes resources** are used to **identify** resources managed via K8ify.
+Labels on the generated **K8s resources** are used to **identify** K8s resources. They are used to set up relationships between the generated K8s resources.
 
-The following set of labels is applied to all generated Kubernetes resources:
+The following set of labels is applied to all generated K8s resources:
 
 ```yaml
 labels:
@@ -74,23 +74,18 @@ labels:
 
 The following variables will be used in the table below:
 
-* `$name` - Name of the Compose service (eg the "key" in the `services` map in the Compose file), e.g. **myapp**
+* `$name` - Name of the Compose service (e.g. the "key" in the `services` map in the Compose file), e.g. **myapp**
 * `$ref` - Name of the `ref` passed to `k8ify`, see [Parameters](../README.md#parameters), e.g. **feat/foo**
-* `$refSlug` - Normalized version of `ref` that is a valid DNS label (and hence can be used as a Kubernetes label value), eg **feat-foo**
+* `$refSlug` - Normalized version of `ref` that is a valid DNS label (and hence can be used as a K8s label value), e.g. **feat-foo**
 
-See [Example input](#example-input) below on how a Compose file would have to look to generat the following example manifests.
+See [example input](#example-input) below on how a Compose file would have to look to generate the following example manifests.
 
 Note that some fields were omited here for brevity.
 
 
-### Common
-
-Labels are documented [above](#labels) and not repeated in the examples below.
-
-
 ### K8s Deployment
 
-See [Deployments vs. Statefulsets](#deployments-vs-statefulsets) for a documentation when a Deployment is used, and when a [StatefulSet](#k8s-statefulset).
+See [Deployments vs. Statefulsets](#deployments-vs-statefulsets) for a documentation when a Deployment is used vs. a [StatefulSet](#k8s-statefulset).
 
 ```yaml
 apiVersion: apps/v1
@@ -125,8 +120,8 @@ spec:
           # If singleton or no ref given: `$name`, otherwise: `$name-$refSlug`
         - name: "myapp-feat-foo"  # or "myapp"
           # `services.$name.image`
-          # Note: We support compose files per environment, so the image can be
-          # configured there. These compose files also support substitution of
+          # Note: We support Compose files per environment, so the image can be
+          # configured there. These Compose files also support substitution of
           # env vars that are set by the CI system, e.g. to fill in the correct
           # tag name.
           image: "docker.io/mycorp/myapp:v0.5.7"
@@ -134,8 +129,8 @@ spec:
             - secretRef:
                 # `$name(-$refSlug)-env`
                 name: "myapp-feat-foo-env"
-          # To reference a value in a secret you need to use a special syntax in `services.$name.environment`:
-          # If an environment value starts with a literal '$_ref_:', it is interpreted as a secret reference.
+          # To reference a value in a Secret you need to use a special syntax in `services.$name.environment`:
+          # If an environment value starts with a literal '$_ref_:', it is interpreted as a Secret reference.
           # Example which would generate the secretRef shown below:
           # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
           env:
@@ -235,8 +230,8 @@ spec:
           # If singleton or no ref given: `$name`, otherwise: `$name-$refSlug`
         - name: "myapp-feat-foo"  # or "myapp"
           # `services.$name.image`
-          # Note: We support compose files per environment, so the image can be
-          # configured there. These compose files also support substitution of
+          # Note: We support Compose files per environment, so the image can be
+          # configured there. These Compose files also support substitution of
           # env vars that are set by the CI system, e.g. to fill in the correct
           # tag name.
           image: "docker.io/mycorp/myapp:v0.5.7"
@@ -244,8 +239,8 @@ spec:
             - secretRef:
                 # `$name(-$refSlug)-env`
                 name: "myapp-feat-foo-env"
-          # To reference a value in a secret you need to use a special syntax in `services.$name.environment`:
-          # If an environment value starts with a literal '$_ref_:', it is interpreted as a secret reference.
+          # To reference a value in a Secret you need to use a special syntax in `services.$name.environment`:
+          # If an environment value starts with a literal '$_ref_:', it is interpreted as a Secret reference.
           # Example which would generate the secretRef shown below:
           # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
           env:
@@ -398,7 +393,7 @@ kind: Ingress
 metadata:
   # `$name(-$ref)-$portString`
   # where `$portString` is the same as `spec.ports.$i.name` in the referenced
-  # K8s service
+  # K8s Service
   name: myapp-feat-foo-8001
   # Whatever is configured in the config file (`.k8ify.default.yaml`) under
   # `ingressPatch.addAnnotations`
@@ -439,15 +434,7 @@ The manifests above were generated using the following command:
 k8ify test feat/foo
 ```
 
-K8ify configuration
-
-```yaml
-ingressPatch:
-  addAnnotations:
-    cert-manager.io/cluster-issuer: letsencrypt-production
-```
-
-Compose file
+Compose file:
 
 ```yaml
 services:
@@ -455,6 +442,7 @@ services:
     labels:
       k8ify.expose.8001: myapp.example.com
       k8ify.liveness: /health
+      k8ify.Ingress.annotations.cert-manager.io/cluster-issuer: letsencrypt-production
     image: docker.io/mycorp/myapp:v0.5.7
     deploy:
       replicas: 2

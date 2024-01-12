@@ -9,11 +9,11 @@ This project adheres to [Semantic Versioning][SemVer] and tries to not break fun
 
 The purpose of this project is to allow developers to generate state-of-the-art Kubernetes manifests without the need to have a degree in Kubernetes-Manifestology.
 
-Just by describing the components of their application they should be able to get a set of Kubernetes manifests that adhere to industry best practices.
+Just by describing the components of their application they should be able to get a set of Kubernetes manifests that adhere to best practices.
 
-The spiritual prototype for k8ify is [Kompose][] and k8ify tries to do things similarly to Kompose if possible. Unfortunately Kompose does not provide the flexibility we need, hence the custom implementation.
+The spiritual prototype for k8ify is [Kompose][] and k8ify tries to do things similarly to Kompose. Unfortunately Kompose does not provide the flexibility we need, hence the custom implementation.
 
-We choose the [Compose][] format as many developers already use Docker Compose for local development environments and are familiar with the format.
+We chose the [Compose][] format as many developers already use Docker Compose for local development and are familiar with it.
 
 
 ### Non-Goals
@@ -34,7 +34,7 @@ This results in flexibility to support various modes of deployment, be it plain 
 
 ## Mode of Operation
 
-`k8ify` takes compose files in the current working directory and converts them to Kubernetes manfests. The manifests are written to the `manifests` directory.
+`k8ify` takes Compose files in the current working directory and converts them to Kubernetes manfests. The manifests are written to the `manifests` directory.
 
 
 ### Command Line Arguments
@@ -48,21 +48,21 @@ This results in flexibility to support various modes of deployment, be it plain 
 
 #### `environment`
 
-`k8ify` supports different environments (e.g. "prod", "test" and "dev") by merging compose files. A possible setup could look like this:
+`k8ify` supports different environments (e.g. "prod", "test" and "dev") by merging Compose files. A setup could look like this:
 
 - `compose.yml` - The global default, the base used by all environments.
 - `compose-prod.yml` - Additional information about the `prod` environment. Used by `k8ify` when asked to generate manifests for the `prod` environment.
 - `compose-test.yml` - Additional information about the `test` environment. Used by `k8ify` when asked to generate manifests for the `test` environment.
-- `compose-dev.yml` - Additional information about the developers local `dev` environment. Never used by `k8ify` but used by developers for local development.
+- `compose-dev.yml` - Additional information about the developer's local `dev` environment. Never used by `k8ify` but used by developer for running everything locally.
 
-`k8ify` will choose the correct compose files and merge them based on the selected environment.
+`k8ify` will choose the correct Compose files and merge them based on the selected environment.
 
 
 #### `ref` - Multiple deployments in the same environment
 
 `k8ify` supports multiple deployments in the same environment, e.g. to deploy different branches of an application into the same `test` environment. It does so by adding a `-$ref` suffix to the name of all generated resources.
 
-Each compose service is, by default, deployed for each `ref`. If you want to deploy a service only once per environment (e.g. a single shared database for all deployments) you can do so by adding the `k8ify.singleton: true` label to the service.
+Each Compose service is, by default, deployed for each `ref`. If you want to deploy a service only once per environment (e.g. a single shared database for all deployments) you can do so by adding the `k8ify.singleton: true` label to the service.
 
 A resulting deployment might look like this:
 
@@ -82,14 +82,14 @@ This parameter is generally set by the CI/CD pipeline, because the pipeline know
 
 #### `--shell-env-file [FILENAME]` - Load additional shell environment variables from file
 
-k8ify relies on the shell environment to fill placeholders in the compose files. This argument can be used to load additional variables. The files have the usual "KEY=VALUE" format and they support quoted values. 
+k8ify relies on the shell environment to fill placeholders in the Compose files. This argument can be used to load additional variables. The files have the usual "KEY=VALUE" format and they support quoted values.
 
 A use case could be to protect your secrets. Instead of loading them into the shell environment you could put them into a file and use this argument to load said file.
 
 
 ### Labels
 
-`k8ify` supports configuring services and volumes by using compose labels. All labels are optional.
+`k8ify` supports configuring services and volumes by using Compose labels. All labels are optional.
 
 #### General
 
@@ -103,7 +103,7 @@ Service Labels
 | `k8ify.converter: $script`  | Call `$script` to convert this service into a K8s object, expecting YAML on `$script`'s stdout. Used for plugging additional functionality into k8ify. The first argument sent to `$script` is the name of the resource, after that all the parameters follow (next row) |
 | `k8ify.converter.$key: $value`  | Call `$script` with parameter `--$key $value` |
 | `k8ify.serviceAccountName: $name`  | Set this service's pod(s) spec.serviceAccountName to `$name`, which tells the pod(s) to use ServiceAccount `$name` for accessing the K8s API. This does not set up the ServiceAcccount itself. |
-| `k8ify.partOf: $name`  | This compose service will be combined with another compose service (resulting in a deployment or statefulSet with multiple containers). Useful e.g. for sidecars or closely coupled services like nginx & php-fpm. |
+| `k8ify.partOf: $name`  | This Compose service will be combined with another Compose service (resulting in a deployment or statefulSet with multiple containers). Useful e.g. for sidecars or closely coupled services like nginx & php-fpm. |
 | `k8ify.annotations.$key: $value`  | Add annotation(s) to all resources generated by k8ify |
 | `k8ify.$kind.annotations.$key: $value`  | Add annotation(s) to specific resource types generated by k8ify. $kind uses the default case used by k8s and is always singular (e.g. "StatefulSet") |
 | `k8ify.exposePlain.$port: true`  | Set up a k8s Service which exposes this port directly instead of using the cluster-wide reverse proxy/load balancer, useful for non-HTTP applications (for HTTP always use `k8ify.expose`). Allocated public IP is visible in the k8s Service's `.status` field. |
@@ -122,7 +122,7 @@ Volume Labels
 
 #### Health Checks
 
-For each compose service k8ify will set up a basic TCP based health check (liveness and startup) by default.
+For each Compose service k8ify will set up a basic TCP based health check (liveness and startup) by default.
 For all services providing HTTP endpoints you should provide at least a basic health check path and point `k8ify.liveness` to it.
 This replaces the TCP based health check by a more specific HTTP(S) check.
 
@@ -148,33 +148,33 @@ This replaces the TCP based health check by a more specific HTTP(S) check.
 
 #### Target Cluster Configuration
 
-There are some cases in which the output of k8ify needs to be different based on the target cluster's configuration. To make this work some properties of the target cluster can be configured via the `x-targetCfg` root key in the compose file.
+There are some cases in which the output of k8ify needs to be different based on the target cluster's configuration. To make this work some properties of the target cluster can be configured via the `x-targetCfg` root key in the Compose file.
 
 | Key  | Effect  |
 | ---- | ------- |
 | `appsDomain: $domain`  | A cluster may have a wildcard certificate for apps to use. If you configure this option and expose a service using `$domain`, the resulting Ingress uses this wildcard certificate (instead of e.g. Let's Encrypt). |
 | `maxExposeLength: $length`  | k8ify does a length check on the exposed domain names, because if they're too long the Ingress will not work. Default is 63.  |
-| `encryptedVolumeScheme: $provider`  | The implementation of encrypted volumes is provider specific. Use this to enable support for a provider. See [Provider](.docs/provider.md) for more information.  |
+| `encryptedVolumeScheme: $provider`  | The implementation of encrypted volumes is provider specific. Use this to enable support for a provider. See [Provider](./docs/provider.md) for more information.  |
 
 
 ## Conversion
 
-The conversion process is documented in-depth in [Conversion](./docs/conversion.md).
+The conversion process is documented in depth in [Conversion](./docs/conversion.md).
 
 
 ## Storage
 
-Storage support is documented in-depth in [Storage](./docs/storage.md).
+Storage support is documented in depth in [Storage](./docs/storage.md).
 
 
 ## Testing
 
-In order to validate that `k8ify` does what we expect it to do, we use the concept of "golden tests": a predefined set of inputs (compose files) and outputs (Kubernetes manifests) are added to the repository. During the testing process, we run `k8ify` against each of the inputs, and verify that the outputs match the expected outputs.
+In order to validate that `k8ify` does what we expect it to do, we use the concept of "golden tests": a predefined set of inputs (Compose files) and outputs (Kubernetes manifests) are added to the repository. During the testing process we run `k8ify` against each of the inputs, and verify that the outputs match the expected outputs.
 
 To set up a golden test named `$NAME`, you need to create two things in the `tests/golden/` directory:
 
 1. A file called `$NAME.yml`, and
-2. A directory called `$NAME` containing compose files.
+2. A directory called `$NAME` containing Compose files.
 
 The structure of the YAML file should look like this:
 
@@ -193,9 +193,9 @@ environments:
 Note that both the `refs` and `vars` fields are optional, but allow you to control the tests:
 
 - `refs` will make the test run `k8ify` for each of the provided values. If no `refs` is defined, `k8ify` will be run once for this environment with an empty `ref` value.
-- `vars` can contain environment variables that are ADDED to the ones that are already set within the testing environment. If your compoose file makes use of any environment variables, make sure to add them here for reproducability.
+- `vars` can contain environment variables that are ADDED to the ones that are already set within the testing environment. If your compoose file makes use of any environment variables, make sure to add them here for reproducibility.
 
-To actually run the tests, run `go test` in the root of the repository.
+To actually run the tests run `go test` in the root of the repository.
 
 
 ## License
