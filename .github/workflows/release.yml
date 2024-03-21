@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "*"
+#    branches:
+#      - 'yourbranch' # useful for testing
 
 env:
   ghcr_latest_tag: "${{ github.ref_type == 'tag' && ',ghcr.io/vshn/k8ify:latest' || '' }}"
