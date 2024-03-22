@@ -1,0 +1,19 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: nginx-frontend
+  name: nginx-frontend-oasp
+spec:
+  maxUnavailable: 50%
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: nginx-frontend
+status:
+  currentHealthy: 0
+  desiredHealthy: 0
+  disruptionsAllowed: 0
+  expectedPods: 0

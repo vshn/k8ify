@@ -20,6 +20,16 @@ spec:
         k8ify.ref-slug: oasp
         k8ify.service: fooBar
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - fooBar
+            topologyKey: kubernetes.io/hostname
       containers:
       - env:
         - name: PASSWORD

@@ -2,6 +2,7 @@ package converter
 
 import (
 	"fmt"
+	v1 "k8s.io/api/policy/v1"
 	"log"
 	"maps"
 	"os"
@@ -183,7 +184,6 @@ func composeServiceToStatefulSet(
 	volumeClaims []core.PersistentVolumeClaim,
 	labels map[string]string,
 ) (apps.StatefulSet, []core.Secret) {
-
 	statefulset := apps.StatefulSet{}
 	statefulset.APIVersion = "apps/v1"
 	statefulset.Kind = "StatefulSet"
@@ -260,6 +260,7 @@ func composeServiceToPodTemplate(
 		RestartPolicy:      core.RestartPolicyAlways,
 		Volumes:            volumesArray,
 		ServiceAccountName: serviceAccountName,
+		Affinity:           composeServiceToAffinity(workload),
 	}
 
 	return core.PodTemplateSpec{
@@ -269,6 +270,29 @@ func composeServiceToPodTemplate(
 			Annotations: util.Annotations(workload.Labels(), "Pod"),
 		},
 	}, secrets
+}
+
+func composeServiceToAffinity(workload *ir.Service) *core.Affinity {
+	podAntiAffinity := core.PodAntiAffinity{
+		RequiredDuringSchedulingIgnoredDuringExecution: []core.PodAffinityTerm{
+			{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "k8ify.service",
+							Operator: "In",
+							Values:   []string{workload.Name},
+						},
+					},
+				},
+				TopologyKey: "kubernetes.io/hostname", // should be available on pretty much any k8s setup
+			},
+		},
+	}
+	affinity := core.Affinity{
+		PodAntiAffinity: &podAntiAffinity,
+	}
+	return &affinity
 }
 
 func composeServiceToContainer(
@@ -717,6 +741,13 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 		objects.Secrets = secrets
 	}
 
+	podDisruptionBudget := composeServiceToPodDisruptionBudget(workload, refSlug, labels)
+	if podDisruptionBudget == nil {
+		objects.PodDisruptionBudgets = []v1.PodDisruptionBudget{}
+	} else {
+		objects.PodDisruptionBudgets = []v1.PodDisruptionBudget{*podDisruptionBudget}
+	}
+
 	ingress := composeServiceToIngress(workload, refSlug, objects.Services, labels, targetCfg)
 	if ingress == nil {
 		objects.Ingresses = []networking.Ingress{}
@@ -769,6 +800,28 @@ func composeVolumeToPvc(name string, labels map[string]string, volume *ir.Volume
 	}
 }
 
+func composeServiceToPodDisruptionBudget(workload *ir.Service, refSlug string, labels map[string]string) *v1.PodDisruptionBudget {
+	replicas := composeServiceToReplicas(workload.AsCompose())
+	if replicas == nil || *replicas <= 1 {
+		return nil
+	}
+
+	podDisruptionBudget := v1.PodDisruptionBudget{}
+	podDisruptionBudget.APIVersion = "policy/v1"
+	podDisruptionBudget.Kind = "PodDisruptionBudget"
+	podDisruptionBudget.Name = workload.Name + refSlug
+	podDisruptionBudget.Labels = labels
+	podDisruptionBudget.Annotations = util.Annotations(workload.Labels(), podDisruptionBudget.Kind)
+	maxUnavailable := intstr.FromString("50%")
+	podDisruptionBudget.Spec = v1.PodDisruptionBudgetSpec{
+		MaxUnavailable: &maxUnavailable,
+		Selector: &metav1.LabelSelector{
+			MatchLabels: labels,
+		},
+	}
+	return &podDisruptionBudget
+}
+
 // Objects combines all possible resources the conversion process could produce
 type Objects struct {
 	// Deployments
@@ -778,6 +831,7 @@ type Objects struct {
 	PersistentVolumeClaims []core.PersistentVolumeClaim
 	Secrets                []core.Secret
 	Ingresses              []networking.Ingress
+	PodDisruptionBudgets   []v1.PodDisruptionBudget
 	Others                 []unstructured.Unstructured
 }
 
@@ -802,6 +856,7 @@ func (this Objects) Append(other Objects) Objects {
 		PersistentVolumeClaims: pvcs,
 		Secrets:                append(this.Secrets, other.Secrets...),
 		Ingresses:              append(this.Ingresses, other.Ingresses...),
+		PodDisruptionBudgets:   append(this.PodDisruptionBudgets, other.PodDisruptionBudgets...),
 		Others:                 append(this.Others, other.Others...),
 	}
 }

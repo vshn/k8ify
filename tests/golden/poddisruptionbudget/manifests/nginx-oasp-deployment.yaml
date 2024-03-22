@@ -4,13 +4,14 @@ metadata:
   creationTimestamp: null
   labels:
     k8ify.ref-slug: oasp
-    k8ify.service: share-0
-  name: share-0-oasp
+    k8ify.service: nginx
+  name: nginx-oasp
 spec:
+  replicas: 2
   selector:
     matchLabels:
       k8ify.ref-slug: oasp
-      k8ify.service: share-0
+      k8ify.service: nginx
   strategy:
     type: Recreate
   template:
@@ -18,7 +19,7 @@ spec:
       creationTimestamp: null
       labels:
         k8ify.ref-slug: oasp
-        k8ify.service: share-0
+        k8ify.service: nginx
     spec:
       affinity:
         podAntiAffinity:
@@ -28,19 +29,28 @@ spec:
               - key: k8ify.service
                 operator: In
                 values:
-                - share-0
+                - nginx
             topologyKey: kubernetes.io/hostname
       containers:
-      - image: nginx
+      - image: docker.io/library/nginx
         imagePullPolicy: Always
-        name: share-0-oasp
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
+        name: nginx-oasp
+        ports:
+        - containerPort: 80
         resources: {}
-        volumeMounts:
-        - mountPath: /data
-          name: shared-data
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
       restartPolicy: Always
-      volumes:
-      - name: shared-data
-        persistentVolumeClaim:
-          claimName: shared-data-oasp
 status: {}

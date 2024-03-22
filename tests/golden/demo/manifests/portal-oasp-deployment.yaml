@@ -21,6 +21,16 @@ spec:
         k8ify.ref-slug: oasp
         k8ify.service: portal
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - portal
+            topologyKey: kubernetes.io/hostname
       containers:
       - args:
         - Hello World

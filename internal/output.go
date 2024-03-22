@@ -104,6 +104,14 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	}
 	logrus.Infof("wrote %d ingresses\n", len(objects.Ingresses))
 
+	for _, podDisruptionBudget := range objects.PodDisruptionBudgets {
+		err := writeManifest(&podDisruptionBudget, outputDir+"/"+podDisruptionBudget.Name+"-poddisruptionbudget.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	logrus.Infof("wrote %d podDisruptionBudgets\n", len(objects.PodDisruptionBudgets))
+
 	for _, other := range objects.Others {
 		err := writeManifest(&other, outputDir+"/"+other.GetName()+"-"+strings.ToLower(other.GetObjectKind().GroupVersionKind().Kind)+".yaml")
 		if err != nil {

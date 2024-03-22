@@ -116,6 +116,17 @@ spec:
         # `services.$name.labels["k8ify.annotations"]` merged with `services.$name.labels["k8ify.Pod.annotations"]` (latter take priority)
         foo: bar
     spec:
+      # Anti-affinity is always configured to avoid running multiple replicas (instances) of the same deployment on the same node
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - `services.$name` # `$refSlug` isn't relevant because we don't mind running different deployments on the same node
+            topologyKey: kubernetes.io/hostname
       containers:
           # If singleton or no ref given: `$name`, otherwise: `$name-$refSlug`
         - name: "myapp-feat-foo"  # or "myapp"
@@ -226,6 +237,17 @@ spec:
         # timestamp to ensure restarts of all pods
         k8ify.restart-trigger: "1675680748"
     spec:
+      # Anti-affinity is always configured to avoid running multiple replicas (instances) of the same deployment on the same node
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - `services.$name` # `$refSlug` isn't relevant because we don't mind running different deployments on the same node
+            topologyKey: kubernetes.io/hostname
       containers:
           # If singleton or no ref given: `$name`, otherwise: `$name-$refSlug`
         - name: "myapp-feat-foo"  # or "myapp"

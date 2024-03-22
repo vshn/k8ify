@@ -21,6 +21,16 @@ spec:
         k8ify.ref-slug: oasp
         k8ify.service: nginx
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - nginx
+            topologyKey: kubernetes.io/hostname
       containers:
       - image: docker.io/library/nginx
         imagePullPolicy: Always
