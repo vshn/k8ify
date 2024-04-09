@@ -16,6 +16,16 @@ spec:
       labels:
         k8ify.service: mongo
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - mongo
+            topologyKey: kubernetes.io/hostname
       containers:
       - image: mongo:4.0
         imagePullPolicy: Always

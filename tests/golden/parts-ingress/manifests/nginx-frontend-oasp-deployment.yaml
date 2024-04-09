@@ -20,6 +20,16 @@ spec:
         k8ify.ref-slug: oasp
         k8ify.service: nginx-frontend
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - nginx-frontend
+            topologyKey: kubernetes.io/hostname
       containers:
       - image: nginx-frontend:prod
         imagePullPolicy: Always

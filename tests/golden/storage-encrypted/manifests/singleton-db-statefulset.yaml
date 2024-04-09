@@ -16,6 +16,16 @@ spec:
       labels:
         k8ify.service: singleton-db
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - singleton-db
+            topologyKey: kubernetes.io/hostname
       containers:
       - image: nginx
         imagePullPolicy: Always
