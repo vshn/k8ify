@@ -411,7 +411,7 @@ func composeServiceToIngress(workload *ir.Service, refSlug string, services []co
 	var service *core.Service
 	for _, s := range services {
 		if serviceSpecIsUnexposedDefault(s.Spec) {
-			service = &s
+			service = &s // This only works since Go 1.22
 		}
 	}
 	if service == nil {
