@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: nginx
+  name: nginx-oasp-443
+spec:
+  externalTrafficPolicy: Cluster
+  healthCheckNodePort: 55667
+  ports:
+  - name: "443"
+    port: 443
+    targetPort: 8443
+  selector:
+    k8ify.ref-slug: oasp
+    k8ify.service: nginx
+  type: LoadBalancer
+status:
+  loadBalancer: {}
