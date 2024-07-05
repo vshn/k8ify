@@ -32,6 +32,16 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
       - env:
+        - name: BARREF
+          valueFrom:
+            secretKeyRef:
+              key: baaaaaar
+              name: bar
+        - name: FOOREF
+          valueFrom:
+            secretKeyRef:
+              key: fooooooo
+              name: foo
         - name: PASSWORD
           valueFrom:
             secretKeyRef:

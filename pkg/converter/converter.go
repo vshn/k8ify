@@ -314,7 +314,19 @@ func composeServiceToContainer(
 		envFrom = append(envFrom, core.EnvFromSource{SecretRef: &core.SecretEnvSource{LocalObjectReference: core.LocalObjectReference{Name: secret.Name}}})
 	}
 	env := []core.EnvVar{}
-	for key, value := range workload.AsCompose().Environment {
+
+	// We need to iterate over the Environment map in an ordered way, because otherwise the resulting secret references will have a non-deterministic order.
+	// Hence we get the keys first and sort them.
+	keys := make([]string, len(workload.AsCompose().Environment))
+	i := 0
+	for k := range workload.AsCompose().Environment {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	// Now iterate over the sorted keys
+	for _, key := range keys {
+		value := workload.AsCompose().Environment[key]
 		if value != nil && strings.HasPrefix(*value, SecretRefMagic+":") {
 			// we've encountered a reference to another secret (starting with "$_ref_:" in the compose file)
 			refValue := (*value)[len(SecretRefMagic)+1:]
@@ -326,6 +338,7 @@ func composeServiceToContainer(
 			env = append(env, core.EnvVar{Name: key, ValueFrom: &core.EnvVarSource{SecretKeyRef: &core.SecretKeySelector{LocalObjectReference: core.LocalObjectReference{Name: refStrings[0]}, Key: refStrings[1]}}})
 		}
 	}
+
 	return core.Container{
 		Name:  composeService.Name + refSlug,
 		Image: composeService.Image,
