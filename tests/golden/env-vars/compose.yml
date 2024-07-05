@@ -6,3 +6,5 @@ services:
       - BAR=${BAR}
       - something_else=${BAZ}
       - "PASSWORD=$_ref_:mongodb-secret:password"
+      - "FOOREF=$_ref_:foo:fooooooo"
+      - "BARREF=$_ref_:bar:baaaaaar"
