@@ -2,6 +2,6 @@
 environments:
   prod:
     vars:
-      foo: 
+      foo:
       bar: ""
       baz: asdf
