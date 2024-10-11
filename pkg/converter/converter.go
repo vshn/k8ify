@@ -803,7 +803,7 @@ func composeVolumeToPvc(name string, labels map[string]string, volume *ir.Volume
 		},
 		Spec: core.PersistentVolumeClaimSpec{
 			AccessModes: []core.PersistentVolumeAccessMode{accessMode},
-			Resources: core.ResourceRequirements{
+			Resources: core.VolumeResourceRequirements{
 				Requests: core.ResourceList{
 					"storage": volume.Size("1G"),
 				},
