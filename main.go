@@ -59,7 +59,7 @@ func Main(args []string) int {
 		config.Ref = plainArgs[1]
 	}
 
-	if config.ConfigFiles == nil || len(config.ConfigFiles) == 0 {
+	if len(config.ConfigFiles) == 0 {
 		config.ConfigFiles = []string{"compose.yml", "docker-compose.yml", "compose-" + config.Env + ".yml", "docker-compose-" + config.Env + ".yml"}
 	}
 
