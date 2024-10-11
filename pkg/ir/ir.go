@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	composeTypes "github.com/compose-spec/compose-go/types"
+	composeTypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/vshn/k8ify/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
