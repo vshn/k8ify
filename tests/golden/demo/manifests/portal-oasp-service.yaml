@@ -8,12 +8,12 @@ metadata:
   name: portal-oasp
 spec:
   ports:
-  - name: "8001"
-    port: 8001
-    targetPort: 8000
   - name: "9001"
     port: 9001
     targetPort: 9000
+  - name: "8001"
+    port: 8001
+    targetPort: 8000
   selector:
     k8ify.ref-slug: oasp
     k8ify.service: portal

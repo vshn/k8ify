@@ -1,4 +1,3 @@
-version: '3.4'
 services:
   pinger:
     image: pinger:4.0
@@ -7,4 +6,3 @@ services:
       - testempty2=$foo
       - testempty3=$bar
       - testnotempty=$baz
-
