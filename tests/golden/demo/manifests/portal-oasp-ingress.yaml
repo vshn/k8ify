@@ -10,16 +10,6 @@ metadata:
   name: portal-oasp
 spec:
   rules:
-  - host: portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud
-    http:
-      paths:
-      - backend:
-          service:
-            name: portal-oasp
-            port:
-              number: 8001
-        path: /
-        pathType: Prefix
   - host: portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud
     http:
       paths:
@@ -30,12 +20,22 @@ spec:
               number: 9001
         path: /
         pathType: Prefix
+  - host: portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud
+    http:
+      paths:
+      - backend:
+          service:
+            name: portal-oasp
+            port:
+              number: 8001
+        path: /
+        pathType: Prefix
   tls:
   - hosts:
-    - portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud
+    - portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud
     secretName: portal-oasp
   - hosts:
-    - portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud
+    - portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud
     secretName: portal-oasp
 status:
   loadBalancer: {}

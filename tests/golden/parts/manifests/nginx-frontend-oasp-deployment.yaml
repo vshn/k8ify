@@ -94,10 +94,10 @@ spec:
             port: 4480
           timeoutSeconds: 60
         volumeMounts:
-        - mountPath: /data/sessions
-          name: sessions
         - mountPath: /data/web
           name: webdata
+        - mountPath: /data/sessions
+          name: sessions
       restartPolicy: Always
       volumes:
       - name: sessions
