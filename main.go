@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	composeLoader "github.com/compose-spec/compose-go/loader"
-	composeTypes "github.com/compose-spec/compose-go/types"
+	composeLoader "github.com/compose-spec/compose-go/v2/loader"
+	composeTypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -59,7 +59,7 @@ func Main(args []string) int {
 		config.Ref = plainArgs[1]
 	}
 
-	if config.ConfigFiles == nil || len(config.ConfigFiles) == 0 {
+	if len(config.ConfigFiles) == 0 {
 		config.ConfigFiles = []string{"compose.yml", "docker-compose.yml", "compose-" + config.Env + ".yml", "docker-compose-" + config.Env + ".yml"}
 	}
 
@@ -68,7 +68,7 @@ func Main(args []string) int {
 	for _, shellEnvFile := range shellEnvFiles.Values {
 		err := godotenv.Load(shellEnvFile)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("Loading dotfiles: %s", err)
 			return 1
 		}
 	}
@@ -91,9 +91,9 @@ func Main(args []string) int {
 		ConfigFiles: composeConfigFiles,
 		Environment: env,
 	}
-	project, err := composeLoader.Load(configDetails)
+	project, err := composeLoader.Load(configDetails, func(opts *composeLoader.Options) { opts.SetProjectName("k8ify", true) })
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("Loading compose configuration: %s", err)
 		return 1
 	}
 
@@ -117,7 +117,7 @@ func Main(args []string) int {
 
 	err = internal.WriteManifests(config.OutputDir, objects)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("Writing manifests: %s", err)
 		return 1
 	}
 

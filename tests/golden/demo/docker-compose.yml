@@ -1,10 +1,9 @@
-version: '3.4'
 services:
   mongo:
     image: mongo:4.0
     restart: always
     ports:
-      - '127.0.0.1:27017:27017'
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongodb_data:/data/db
   portal:
@@ -20,7 +19,7 @@ services:
       - "8001:8000"
     volumes:
       - ./:/src
-    entrypoint: 
+    entrypoint:
       - echo
     command:
       - "Hello World"

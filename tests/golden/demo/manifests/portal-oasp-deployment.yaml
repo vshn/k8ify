@@ -46,20 +46,20 @@ spec:
           failureThreshold: 3
           httpGet:
             path: /health/alive
-            port: 8000
+            port: 9000
             scheme: HTTP
           periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 60
         name: portal-oasp
         ports:
-        - containerPort: 8000
         - containerPort: 9000
+        - containerPort: 8000
         readinessProbe:
           failureThreshold: 4
           httpGet:
             path: /health/ready
-            port: 8000
+            port: 9000
             scheme: HTTPS
           initialDelaySeconds: 5
           periodSeconds: 31
@@ -76,7 +76,7 @@ spec:
           failureThreshold: 30
           httpGet:
             path: /health/started
-            port: 8000
+            port: 9000
             scheme: HTTP
           periodSeconds: 10
           successThreshold: 1

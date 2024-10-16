@@ -8,10 +8,9 @@ import (
 	"os"
 	"os/exec"
 	"sort"
-	"strconv"
 	"strings"
 
-	composeTypes "github.com/compose-spec/compose-go/types"
+	composeTypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/sirupsen/logrus"
 	"github.com/vshn/k8ify/pkg/ir"
 	"github.com/vshn/k8ify/pkg/util"
@@ -602,8 +601,8 @@ func composeServiceToResourceRequirements(composeService composeTypes.ServiceCon
 	if composeService.Deploy != nil {
 		if composeService.Deploy.Resources.Reservations != nil {
 			// NanoCPU appears to be a misnomer, it's actually a float indicating the number of CPU cores, nothing 'nano'
-			cpuRequest, err := strconv.ParseFloat(composeService.Deploy.Resources.Reservations.NanoCPUs, 64)
-			if err == nil && cpuRequest > 0 {
+			cpuRequest := composeService.Deploy.Resources.Reservations.NanoCPUs
+			if cpuRequest > 0 {
 				requestsMap["cpu"] = resource.MustParse(fmt.Sprintf("%f", cpuRequest))
 				limitsMap["cpu"] = resource.MustParse(fmt.Sprintf("%f", cpuRequest*10.0))
 			}
@@ -616,8 +615,8 @@ func composeServiceToResourceRequirements(composeService composeTypes.ServiceCon
 		if composeService.Deploy.Resources.Limits != nil {
 			// If there are explicit limits configured we ignore the defaults calculated from the requests
 			limitsMap = core.ResourceList{}
-			cpuLimit, err := strconv.ParseFloat(composeService.Deploy.Resources.Limits.NanoCPUs, 64)
-			if err == nil && cpuLimit > 0 {
+			cpuLimit := composeService.Deploy.Resources.Limits.NanoCPUs
+			if cpuLimit > 0 {
 				limitsMap["cpu"] = resource.MustParse(fmt.Sprintf("%f", cpuLimit))
 			}
 			memLimit := composeService.Deploy.Resources.Limits.MemoryBytes
@@ -803,7 +802,7 @@ func composeVolumeToPvc(name string, labels map[string]string, volume *ir.Volume
 		},
 		Spec: core.PersistentVolumeClaimSpec{
 			AccessModes: []core.PersistentVolumeAccessMode{accessMode},
-			Resources: core.ResourceRequirements{
+			Resources: core.VolumeResourceRequirements{
 				Requests: core.ResourceList{
 					"storage": volume.Size("1G"),
 				},
