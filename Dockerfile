@@ -1,5 +1,5 @@
 # Build
-FROM docker.io/library/golang:latest AS build
+FROM docker.io/library/golang:1.23 AS build
 
 WORKDIR /src
 COPY . .
