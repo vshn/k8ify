@@ -1,13 +1,15 @@
-version: '3.4'
+version: "3.4"
 services:
   mongo:
     image: mongo:4.0
     restart: always
     ports:
-      - '127.0.0.1:27017:27017'
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongodb_data:/data/db
   portal:
+    labels:
+      k8ify.enableServiceLinks: "true"
     image: vshn/portal:dev
     build:
       target: base
@@ -20,7 +22,7 @@ services:
       - "8001:8000"
     volumes:
       - ./:/src
-    entrypoint: 
+    entrypoint:
       - echo
     command:
       - "Hello World"

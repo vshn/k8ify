@@ -35,5 +35,6 @@ spec:
         imagePullPolicy: Always
         name: pinger-oasp
         resources: {}
+      enableServiceLinks: false
       restartPolicy: Always
 status: {}

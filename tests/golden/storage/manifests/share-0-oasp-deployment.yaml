@@ -38,6 +38,7 @@ spec:
         volumeMounts:
         - mountPath: /data
           name: shared-data
+      enableServiceLinks: false
       restartPolicy: Always
       volumes:
       - name: shared-data

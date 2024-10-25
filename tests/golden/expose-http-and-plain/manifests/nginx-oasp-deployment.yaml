@@ -55,5 +55,6 @@ spec:
           tcpSocket:
             port: 8888
           timeoutSeconds: 60
+      enableServiceLinks: false
       restartPolicy: Always
 status: {}

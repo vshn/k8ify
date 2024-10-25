@@ -54,5 +54,6 @@ spec:
         imagePullPolicy: Always
         name: fooBar-oasp
         resources: {}
+      enableServiceLinks: false
       restartPolicy: Always
 status: {}
