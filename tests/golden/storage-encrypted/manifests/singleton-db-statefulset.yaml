@@ -34,6 +34,7 @@ spec:
         volumeMounts:
         - mountPath: /data
           name: singleton-db-storage
+      enableServiceLinks: false
       restartPolicy: Always
   updateStrategy: {}
   volumeClaimTemplates:

@@ -116,6 +116,8 @@ spec:
         # `services.$name.labels["k8ify.annotations"]` merged with `services.$name.labels["k8ify.Pod.annotations"]` (latter take priority)
         foo: bar
     spec:
+      # `services.$name.labels."k8ify.enableServiceLinks`, defaults to `false`
+      enableServiceLinks: false
       # Anti-affinity is always configured to avoid running multiple replicas (instances) of the same deployment on the same node
       affinity:
         podAntiAffinity:
@@ -237,6 +239,8 @@ spec:
         # timestamp to ensure restarts of all pods
         k8ify.restart-trigger: "1675680748"
     spec:
+      # `services.$name.labels."k8ify.enableServiceLinks`, defaults to `false`
+      enableServiceLinks: false
       # Anti-affinity is always configured to avoid running multiple replicas (instances) of the same deployment on the same node
       affinity:
         podAntiAffinity:

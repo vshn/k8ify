@@ -110,6 +110,7 @@ Service Labels
 | `k8ify.exposePlain.$port.type: ClusterIP\|LoadBalancer\|ExternalName\|NodePort`  | Set the k8s Service type (default `LoadBalancer`) |
 | `k8ify.exposePlain.$port.externalTrafficPolicy: Cluster\|Local`  | Set the k8s Service traffic policy (default `Local`). `Local` makes the client IP visible to the application but may provide worse load balancing than `Cluster`. |
 | `k8ify.exposePlain.$port.healthCheckNodePort: $port`  | Set the k8s Service health check port number. |
+| `k8ify.enableServiceLinks: $value` | Inject ENV variables for each K8s service in the namespace. |
 
 Volume Labels
 

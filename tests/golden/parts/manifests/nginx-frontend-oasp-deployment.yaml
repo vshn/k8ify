@@ -98,6 +98,7 @@ spec:
           name: sessions
         - mountPath: /data/web
           name: webdata
+      enableServiceLinks: false
       restartPolicy: Always
       volumes:
       - name: sessions

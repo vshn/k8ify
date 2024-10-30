@@ -255,7 +255,10 @@ func composeServiceToPodTemplate(
 		volumesArray = append(volumesArray, volumes[key])
 	}
 
+	enableServiceLinks := util.GetBoolean(workload.Labels(), "k8ify.enableServiceLinks")
+
 	podSpec := core.PodSpec{
+		EnableServiceLinks: &enableServiceLinks,
 		Containers:         containers,
 		RestartPolicy:      core.RestartPolicyAlways,
 		Volumes:            volumesArray,

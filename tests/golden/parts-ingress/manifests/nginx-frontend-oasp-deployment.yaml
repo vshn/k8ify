@@ -71,5 +71,6 @@ spec:
           tcpSocket:
             port: 4480
           timeoutSeconds: 60
+      enableServiceLinks: false
       restartPolicy: Always
 status: {}
