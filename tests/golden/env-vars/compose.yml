@@ -8,3 +8,4 @@ services:
       - "PASSWORD=$_ref_:mongodb-secret:password"
       - "FOOREF=$_ref_:foo:fooooooo"
       - "BARREF=$_ref_:bar:baaaaaar"
+      - "MY_IP=$_fieldRef_:status.podIP"

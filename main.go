@@ -87,6 +87,7 @@ func Main(args []string) int {
 		return 1
 	}
 	env["_ref_"] = converter.SecretRefMagic
+	env["_fieldRef_"] = converter.FieldRefMagic
 	configDetails := composeTypes.ConfigDetails{
 		ConfigFiles: composeConfigFiles,
 		Environment: env,

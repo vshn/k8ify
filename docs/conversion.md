@@ -142,16 +142,23 @@ spec:
             - secretRef:
                 # `$name(-$refSlug)-env`
                 name: "myapp-feat-foo-env"
-          # To reference a value in a Secret you need to use a special syntax in `services.$name.environment`:
-          # If an environment value starts with a literal '$_ref_:', it is interpreted as a Secret reference.
-          # Example which would generate the secretRef shown below:
-          # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
           env:
-            - DATABASE_PASSWORD
+            # To reference a value in a Secret you need to use a special syntax in `services.$name.environment`:
+            # If an environment value starts with a literal '$_ref_:', it is interpreted as a Secret reference.
+            # Example which would generate the secretRef shown below:
+            # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
+            - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: database-credentials-secret
                   key: password
+            # To reference a pod field, use `$_fieldRef_:` instead
+            # Example which would generate the fieldRef shown below:
+            # `MY_POD_IP=$_fieldRef_:status.podIP`
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           # List of the target port values from `services.$name.ports`
           ports:
             - containerPort: 8000
@@ -265,16 +272,23 @@ spec:
             - secretRef:
                 # `$name(-$refSlug)-env`
                 name: "myapp-feat-foo-env"
-          # To reference a value in a Secret you need to use a special syntax in `services.$name.environment`:
-          # If an environment value starts with a literal '$_ref_:', it is interpreted as a Secret reference.
-          # Example which would generate the secretRef shown below:
-          # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
           env:
-            - DATABASE_PASSWORD
+            # To reference a value in a Secret you need to use a special syntax in `services.$name.environment`:
+            # If an environment value starts with a literal '$_ref_:', it is interpreted as a Secret reference.
+            # Example which would generate the secretRef shown below:
+            # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
+            - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: database-credentials-secret
                   key: password
+            # To reference a pod field, use `$_fieldRef_:` instead
+            # Example which would generate the fieldRef shown below:
+            # `MY_POD_IP=$_fieldRef_:status.podIP`
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           # List of the target port values from `services.$name.ports`
           ports:
             - containerPort: 8000
