@@ -5,7 +5,7 @@ services:
       - FOO
       - BAR=${BAR}
       - something_else=${BAZ}
-      - "PASSWORD=$_ref_:mongodb-secret:password"
-      - "FOOREF=$_ref_:foo:fooooooo"
-      - "BARREF=$_ref_:bar:baaaaaar"
+      - "PASSWORD=$_secretRef_:mongodb-secret:password"
+      - "FOOREF=$_secretRef_:foo:fooooooo"
+      - "BARREF=$_secretRef_:bar:baaaaaar"
       - "MY_IP=$_fieldRef_:status.podIP"

@@ -82,11 +82,14 @@ func Main(args []string) int {
 		}
 	}
 	env := util.GetEnv()
-	if _, ok := env["_ref_"]; ok {
-		logrus.Error("The environment variable '_ref_' must not be defined as it is needed for internal purposes")
-		return 1
+	for _, key := range []string{"_ref_", "_secretRef_", "_fieldRef_"} {
+		if _, ok := env[key]; ok {
+			logrus.Errorf("The environment variable '%s' must not be defined as it is needed for internal purposes", key)
+			return 1
+		}
 	}
 	env["_ref_"] = converter.SecretRefMagic
+	env["_secretRef_"] = converter.SecretRefMagic
 	env["_fieldRef_"] = converter.FieldRefMagic
 	configDetails := composeTypes.ConfigDetails{
 		ConfigFiles: composeConfigFiles,

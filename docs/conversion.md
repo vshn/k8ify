@@ -144,9 +144,9 @@ spec:
                 name: "myapp-feat-foo-env"
           env:
             # To reference a value in a Secret you need to use a special syntax in `services.$name.environment`:
-            # If an environment value starts with a literal '$_ref_:', it is interpreted as a Secret reference.
+            # If an environment value starts with a literal '$_secretRef_:', it is interpreted as a Secret reference.
             # Example which would generate the secretRef shown below:
-            # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
+            # `DATABASE_PASSWORD=$_secretRef_:database-credentials-secret:password`
             - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -274,9 +274,9 @@ spec:
                 name: "myapp-feat-foo-env"
           env:
             # To reference a value in a Secret you need to use a special syntax in `services.$name.environment`:
-            # If an environment value starts with a literal '$_ref_:', it is interpreted as a Secret reference.
+            # If an environment value starts with a literal '$_secretRef_:', it is interpreted as a Secret reference.
             # Example which would generate the secretRef shown below:
-            # `DATABASE_PASSWORD=$_ref_:database-credentials-secret:password`
+            # `DATABASE_PASSWORD=$_secretRef_:database-credentials-secret:password`
             - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
