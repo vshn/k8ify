@@ -27,7 +27,11 @@ import (
 )
 
 var (
-	SecretRefMagic = "ylkBUFN0o29yr4yLCTUZqzgIT6qCIbyj" // magic string to indicate that what follows isn't a value but a reference to a secret
+	// magic string to indicate that what follows isn't a value but a reference to a secret
+	SecretRefMagic = "ylkBUFN0o29yr4yLCTUZqzgIT6qCIbyj"
+
+	// magic string to indicate that what follows isn't a value but a fieldRef
+	FieldRefMagic = "VtF2ZSrJBKSEJCiUVkGCyUawAfGBCwou"
 )
 
 func composeServiceVolumesToK8s(
@@ -121,11 +125,17 @@ func composeServicePortsToK8sContainerPorts(workload *ir.Service) []core.Contain
 	return containerPorts
 }
 
+func isReference(value *string) bool {
+	return value != nil && (strings.HasPrefix(*value, SecretRefMagic+":") || strings.HasPrefix(*value, FieldRefMagic+":"))
+}
+
 func composeServiceToSecret(workload *ir.Service, refSlug string, labels map[string]string) *core.Secret {
 	stringData := make(map[string]string)
 	for key, value := range workload.AsCompose().Environment {
-		if value != nil && strings.HasPrefix(*value, SecretRefMagic+":") {
-			// we've encountered a reference to another secret (starting with "$_ref_:" in the compose file), ignore
+		if isReference(value) {
+			// we've encountered a reference to another secret or a field ref
+			// (starting with "$_secretRef_:" or "$_fieldRef_:" in the compose file),
+			// ignore
 			continue
 		}
 		if value == nil {
@@ -365,14 +375,22 @@ func composeServiceToContainer(
 	for _, key := range keys {
 		value := workload.AsCompose().Environment[key]
 		if value != nil && strings.HasPrefix(*value, SecretRefMagic+":") {
-			// we've encountered a reference to another secret (starting with "$_ref_:" in the compose file)
+			// we've encountered a reference to another secret (starting with "$_secretRef_:" in the compose file)
 			refValue := (*value)[len(SecretRefMagic)+1:]
 			refStrings := strings.SplitN(refValue, ":", 2)
 			if len(refStrings) != 2 {
-				logrus.Warnf("Secret reference '$_ref_:%s' has invalid format, should be '$_ref_:SECRETNAME:KEY'. Ignoring.", refValue)
+				logrus.Warnf("Secret reference '$_secretRef_:%s' has invalid format, should be '$_secretRef_:SECRETNAME:KEY'. Ignoring.", refValue)
 				continue
 			}
 			env = append(env, core.EnvVar{Name: key, ValueFrom: &core.EnvVarSource{SecretKeyRef: &core.SecretKeySelector{LocalObjectReference: core.LocalObjectReference{Name: refStrings[0]}, Key: refStrings[1]}}})
+		} else if value != nil && strings.HasPrefix(*value, FieldRefMagic+":") {
+			// we've encountered a fieldRef
+			refValue := (*value)[len(FieldRefMagic)+1:]
+			if strings.Contains(refValue, ":") {
+				logrus.Warnf("FieldRef '$_fieldRef_:%s' has invalid format, should be '$_fieldRef_:PATH'. Ignoring.", refValue)
+				continue
+			}
+			env = append(env, core.EnvVar{Name: key, ValueFrom: &core.EnvVarSource{FieldRef: &core.ObjectFieldSelector{FieldPath: refValue}}})
 		}
 	}
 
