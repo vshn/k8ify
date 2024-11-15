@@ -240,6 +240,10 @@ metadata:
 spec:
   # `services.$name.deploy.replicas`, defaults to `nil`
   replicas: 2
+  # If singleton or no `ref` given: "$name"
+  # Otherwise: "$name-$refSlug"
+  # Make sure you expose at least one port to make sure the service is created!
+  serviceName: "myapp-feat-foo"  # or "myapp"
   template:
     metadata:
       annotations:

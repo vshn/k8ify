@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       k8ify.service: singleton-db
-  serviceName: ""
+  serviceName: singleton-db
   template:
     metadata:
       creationTimestamp: null
