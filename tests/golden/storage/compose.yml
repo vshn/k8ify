@@ -25,6 +25,10 @@ services:
     volumes:
       - singleton-db-storage:/data
 
+  tmpfs-service:
+    image: nginx
+    tmpfs:
+      - /tmp
 
 volumes:
   default-data: {}

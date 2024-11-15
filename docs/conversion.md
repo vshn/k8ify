@@ -41,6 +41,8 @@ This can be changed to `ReadWriteMany` by adding the label `k8ify.shared: true` 
 
 See [Storage](./storage.md) for a more detailed explanation.
 
+A special case are entries listed under a service's `tmpfs` attribute: Each path is translated to an `emptyDir` volume.
+
 #### Deployments vs. StatefulSets
 
 By default a Compose service will be translated to a `Deployment`. If a Compose service only uses shared (`ReadWriteMany`) volumes, it will still be translated to a `Deployment`.

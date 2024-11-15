@@ -65,6 +65,33 @@ func composeServiceVolumesToK8s(
 	return volumes, volumeMounts
 }
 
+func composeServiceTmpfsToK8s(
+	container string,
+	paths []string,
+) (map[string]core.Volume, []core.VolumeMount) {
+	volumeMounts := []core.VolumeMount{}
+	volumes := make(map[string]core.Volume)
+
+	for _, path := range paths {
+		// MinLength of 3 because the most common use case is "/tmp", which results in a 3-letter-identifier
+		name := fmt.Sprintf("%s-tmpfs-%s", container, util.SanitizeWithMinLength(path, 3))
+
+		volumeMounts = append(volumeMounts, core.VolumeMount{
+			Name:      name,
+			MountPath: path,
+		})
+
+		volumes[name] = core.Volume{
+			Name: name,
+			VolumeSource: core.VolumeSource{
+				EmptyDir: &core.EmptyDirVolumeSource{},
+			},
+		}
+	}
+
+	return volumes, volumeMounts
+}
+
 func composeServicePortsToK8sServicePorts(workload *ir.Service) []core.ServicePort {
 	servicePorts := []core.ServicePort{}
 	ports := workload.GetPorts()
@@ -305,9 +332,16 @@ func composeServiceToContainer(
 	labels map[string]string,
 ) (core.Container, *core.Secret, map[string]core.Volume) {
 	composeService := workload.AsCompose()
+
 	volumes, volumeMounts := composeServiceVolumesToK8s(
 		refSlug, workload.AsCompose().Volumes, projectVolumes,
 	)
+	emptyDirVolumes, emptyDirVolumeMounts := composeServiceTmpfsToK8s(composeService.Name, workload.AsCompose().Tmpfs)
+	for k, v := range emptyDirVolumes {
+		volumes[k] = v
+	}
+	volumeMounts = append(volumeMounts, emptyDirVolumeMounts...)
+
 	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(workload)
 	containerPorts := composeServicePortsToK8sContainerPorts(workload)
 	resources := composeServiceToResourceRequirements(composeService)

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: tmpfs-service
+  name: tmpfs-service-oasp
+spec:
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: tmpfs-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: tmpfs-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - tmpfs-service
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: tmpfs-service-oasp
+        resources: {}
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmpfs-service-tmpfs-tmp
+      enableServiceLinks: false
+      restartPolicy: Always
+      volumes:
+      - emptyDir: {}
+        name: tmpfs-service-tmpfs-tmp
+status: {}
