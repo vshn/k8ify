@@ -11,3 +11,5 @@
 # Goreleaser
 /dist/
 /.github/release-notes.md
+
+dist/
