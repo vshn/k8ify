@@ -3,18 +3,18 @@ kind: StatefulSet
 metadata:
   creationTimestamp: null
   labels:
-    k8ify.service: part-of-statefullset
-  name: part-of-statefullset
+    k8ify.service: regular-statefulset
+  name: regular-statefulset
 spec:
   selector:
     matchLabels:
-      k8ify.service: part-of-statefullset
+      k8ify.service: regular-statefulset
   serviceName: ""
   template:
     metadata:
       creationTimestamp: null
       labels:
-        k8ify.service: part-of-statefullset
+        k8ify.service: regular-statefulset
     spec:
       affinity:
         podAntiAffinity:
@@ -24,7 +24,7 @@ spec:
               - key: k8ify.service
                 operator: In
                 values:
-                - part-of-statefullset
+                - regular-statefulset
             topologyKey: kubernetes.io/hostname
       containers:
       - env:
@@ -45,22 +45,17 @@ spec:
               name: mongodb-secret
         envFrom:
         - secretRef:
-            name: part-of-statefullset-env
-        image: postgres
+            name: regular-statefulset-env
+        image: mongodb
         imagePullPolicy: Always
-        name: part-of-statefullset
+        name: regular-statefulset
         resources: {}
         volumeMounts:
         - mountPath: /data
-          name: part-of-statefullset
-      - image: pgpool
-        imagePullPolicy: Always
-        name: part-of-statefullset-sidecar
-        resources: {}
+          name: regular-statefulset
       enableServiceLinks: false
       imagePullSecrets:
-      - name: part-of-statefullset-imagePull-secret
-      - name: part-of-statefullset-sidecar-imagePull-secret
+      - name: regular-statefulset-image-pull-secret
       restartPolicy: Always
   updateStrategy: {}
   volumeClaimTemplates:
@@ -69,8 +64,8 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        k8ify.service: part-of-statefullset
-      name: part-of-statefullset
+        k8ify.service: regular-statefulset
+      name: regular-statefulset
     spec:
       accessModes:
       - ReadWriteOnce

@@ -60,7 +60,7 @@ spec:
         resources: {}
       enableServiceLinks: false
       imagePullSecrets:
-      - name: part-of-deployment-oasp-imagePull-secret
-      - name: part-of-deployment-sidecar-oasp-imagePull-secret
+      - name: part-of-deployment-oasp-image-pull-secret
+      - name: part-of-deployment-sidecar-oasp-image-pull-secret
       restartPolicy: Always
 status: {}

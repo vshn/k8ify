@@ -56,6 +56,6 @@ spec:
         resources: {}
       enableServiceLinks: false
       imagePullSecrets:
-      - name: regular-deployment-oasp-imagePull-secret
+      - name: regular-deployment-oasp-image-pull-secret
       restartPolicy: Always
 status: {}
