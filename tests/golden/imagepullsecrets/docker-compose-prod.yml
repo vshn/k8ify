@@ -1,0 +1,76 @@
+version: '3.4'
+services:
+  regular-deployment:
+    image: nginx
+    labels:
+      k8ify.imagePullSecret: '$REGULAR_DEPLOYMENT_IMAGEPULLSECRET'
+    environment:
+      - FOO
+      - BAR=${BAR}
+      - something_else=${BAZ}
+      - "PASSWORD=$_ref_:mongodb-secret:password"
+      - "FOOREF=$_ref_:foo:fooooooo"
+      - "BARREF=$_ref_:bar:baaaaaar"
+  
+  regular-statefullset:
+    image: mongodb
+    labels:
+      k8ify.imagePullSecret: '$REGULAR_STATEFULLSET_IMAGEPULLSECRET'
+      k8ify.singleton: true
+    volumes:
+      - regular-statefullset:/data
+    environment:
+      - FOO
+      - BAR=${BAR}
+      - something_else=${BAZ}
+      - "PASSWORD=$_ref_:mongodb-secret:password"
+      - "FOOREF=$_ref_:foo:fooooooo"
+      - "BARREF=$_ref_:bar:baaaaaar"  
+  
+  part-of-deployment:
+    image: nginx-frontend
+    labels:
+      k8ify.imagePullSecret: '$PART_OF_DEPLOYMENT_IMAGEPULLSECRET'
+    environment:
+      - FOO
+      - BAR=${BAR}
+      - something_else=${BAZ}
+      - "PASSWORD=$_ref_:mongodb-secret:password"
+      - "FOOREF=$_ref_:foo:fooooooo"
+      - "BARREF=$_ref_:bar:baaaaaar"
+  
+  part-of-deployment-sidecar:
+    image: php-backend
+    labels:
+      k8ify.imagePullSecret: '$PART_OF_DEPLOYMENT_SIDECAR_IMAGEPULLSECRET'
+      k8ify.partOf: 'part-of-deployment'
+  
+  part-of-statefullset:
+    labels:
+      k8ify.imagePullSecret: '$PART_OF_STATEFULLSET_IMAGEPULLSECRET'
+      k8ify.singleton: true
+    image: postgres
+    volumes:
+      - part-of-statefullset:/data
+    environment:
+      - FOO
+      - BAR=${BAR}
+      - something_else=${BAZ}
+      - "PASSWORD=$_ref_:mongodb-secret:password"
+      - "FOOREF=$_ref_:foo:fooooooo"
+      - "BARREF=$_ref_:bar:baaaaaar"
+  
+  part-of-statefullset-sidecar:
+    labels:
+      k8ify.imagePullSecret: '$PART_OF_STATEFULLSET_SIDECAR_IMMAGEPULLSECRET'
+      k8ify.partOf: 'part-of-statefullset'
+      k8ify.singleton: true
+    image: pgpool
+
+volumes:
+  regular-statefullset:
+    labels:
+      k8ify.singleton: true
+  part-of-statefullset:
+    labels:
+      k8ify.singleton: true

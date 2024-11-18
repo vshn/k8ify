@@ -1,11 +1,12 @@
 package ir
 
 import (
+	"strconv"
+	"strings"
+
 	composeTypes "github.com/compose-spec/compose-go/types"
 	"github.com/vshn/k8ify/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"strconv"
-	"strings"
 )
 
 type Inputs struct {

@@ -2,12 +2,13 @@ package util
 
 import (
 	"fmt"
-	core "k8s.io/api/core/v1"
 	"maps"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+
+	core "k8s.io/api/core/v1"
 
 	"github.com/docker/go-units"
 	"github.com/sirupsen/logrus"
@@ -104,6 +105,10 @@ func Converter(labels map[string]string) *string {
 
 func PartOf(labels map[string]string) *string {
 	return GetOptional(labels, "k8ify.partOf")
+}
+
+func ImagePullSecret(labels map[string]string) *string {
+	return GetOptional(labels, "k8ify.imagePullSecret")
 }
 
 // StorageSize determines the requested storage size for a volume, or a
