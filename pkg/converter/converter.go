@@ -126,7 +126,7 @@ func composeServiceToPullSecret(authConf string, name string, labels map[string]
 	secret.APIVersion = "v1"
 	secret.Kind = "Secret"
 	secret.Type = core.SecretTypeDockerConfigJson
-	secret.Name = name + "-imagePull"
+	secret.Name = name + "-image-pull"
 	secret.Labels = labels
 	secret.Annotations = util.Annotations(labels, "Secret")
 	secret.StringData = map[string]string{".dockerconfigjson": authConf}
