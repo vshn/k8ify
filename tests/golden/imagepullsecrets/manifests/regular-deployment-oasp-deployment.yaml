@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: regular-deployment
+  name: regular-deployment-oasp
+spec:
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: regular-deployment
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: regular-deployment
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - regular-deployment
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - env:
+        - name: BARREF
+          valueFrom:
+            secretKeyRef:
+              key: baaaaaar
+              name: bar
+        - name: FOOREF
+          valueFrom:
+            secretKeyRef:
+              key: fooooooo
+              name: foo
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: mongodb-secret
+        envFrom:
+        - secretRef:
+            name: regular-deployment-oasp-env
+        image: nginx
+        imagePullPolicy: Always
+        name: regular-deployment-oasp
+        resources: {}
+      enableServiceLinks: false
+      imagePullSecrets:
+      - name: regular-deployment-oasp-image-pull-secret
+      restartPolicy: Always
+status: {}

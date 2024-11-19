@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.service: part-of-statefulset
+  name: part-of-statefulset
+spec:
+  selector:
+    matchLabels:
+      k8ify.service: part-of-statefulset
+  serviceName: ""
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.service: part-of-statefulset
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - part-of-statefulset
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - env:
+        - name: BARREF
+          valueFrom:
+            secretKeyRef:
+              key: baaaaaar
+              name: bar
+        - name: FOOREF
+          valueFrom:
+            secretKeyRef:
+              key: fooooooo
+              name: foo
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: mongodb-secret
+        envFrom:
+        - secretRef:
+            name: part-of-statefulset-env
+        image: postgres
+        imagePullPolicy: Always
+        name: part-of-statefulset
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: part-of-statefulset
+      - image: pgpool
+        imagePullPolicy: Always
+        name: part-of-statefulset-sidecar
+        resources: {}
+      enableServiceLinks: false
+      imagePullSecrets:
+      - name: part-of-statefulset-image-pull-secret
+      - name: part-of-statefulset-sidecar-image-pull-secret
+      restartPolicy: Always
+  updateStrategy: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.service: part-of-statefulset
+      name: part-of-statefulset
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+    status: {}
+status:
+  availableReplicas: 0
+  replicas: 0

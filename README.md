@@ -97,6 +97,7 @@ Service Labels
 
 | Label  | Effect  |
 | ------ | ------- |
+| `k8ify.imagePullSecret: $env_var` | Creates an ImagePullSecret from the referenced environment variable([example](https://github.com/vshn/k8ify/blob/22b814f1ee0e7c0be2b8788096702678f359a71b/tests/golden/imagepullsecrets.yml)). Can be used once per service.|
 | `k8ify.singleton: true`  | Compose service is only deployed once per environment instead of once per `$ref` per environment  |
 | `k8ify.expose: $host`  | The first port is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |
 | `k8ify.expose.$port: $host`  | The port `$port` is exposed to the internet via a HTTPS ingress with the host name set to `$host`  |

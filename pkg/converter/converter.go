@@ -2,7 +2,6 @@ package converter
 
 import (
 	"fmt"
-	v1 "k8s.io/api/policy/v1"
 	"log"
 	"maps"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	v1 "k8s.io/api/policy/v1"
 
 	composeTypes "github.com/compose-spec/compose-go/types"
 	"github.com/sirupsen/logrus"
@@ -157,6 +158,18 @@ func composeServiceToSecret(workload *ir.Service, refSlug string, labels map[str
 	return &secret
 }
 
+func composeServiceToPullSecret(authConf string, name string, labels map[string]string) *core.Secret {
+	secret := core.Secret{}
+	secret.APIVersion = "v1"
+	secret.Kind = "Secret"
+	secret.Type = core.SecretTypeDockerConfigJson
+	secret.Name = name + "-image-pull"
+	secret.Labels = labels
+	secret.Annotations = util.Annotations(labels, "Secret")
+	secret.StringData = map[string]string{".dockerconfigjson": authConf}
+	return &secret
+}
+
 func composeServiceToDeployment(
 	workload *ir.Service,
 	refSlug string,
@@ -271,12 +284,29 @@ func composeServiceToPodTemplate(
 	if secret != nil {
 		secrets = append(secrets, *secret)
 	}
-
+	imagePullSecretReference := []core.LocalObjectReference{}
+	if util.ImagePullSecret(workload.AsCompose().Labels) != nil {
+		imagePullSecret := composeServiceToPullSecret(
+			*util.ImagePullSecret(workload.AsCompose().Labels),
+			workload.Name+refSlug,
+			labels)
+		secrets = append(secrets, *imagePullSecret)
+		imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name + "-secret"})
+	}
 	for _, part := range workload.GetParts() {
 		c, s, cvs := composeServiceToContainer(part, refSlug, projectVolumes, labels)
 		containers = append(containers, c)
 		if s != nil {
 			secrets = append(secrets, *s)
+		}
+		if util.ImagePullSecret(part.AsCompose().Labels) != nil {
+			imagePullSecret := composeServiceToPullSecret(
+				*util.ImagePullSecret(part.AsCompose().Labels),
+				part.Name+refSlug,
+				labels)
+			secrets = append(secrets, *imagePullSecret)
+			imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name + "-secret"})
+
 		}
 		maps.Copy(volumes, cvs)
 	}
@@ -296,6 +326,7 @@ func composeServiceToPodTemplate(
 
 	podSpec := core.PodSpec{
 		EnableServiceLinks: &enableServiceLinks,
+		ImagePullSecrets:   imagePullSecretReference,
 		Containers:         containers,
 		RestartPolicy:      core.RestartPolicyAlways,
 		Volumes:            volumesArray,

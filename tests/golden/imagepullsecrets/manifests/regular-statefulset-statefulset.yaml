@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.service: regular-statefulset
+  name: regular-statefulset
+spec:
+  selector:
+    matchLabels:
+      k8ify.service: regular-statefulset
+  serviceName: ""
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.service: regular-statefulset
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - regular-statefulset
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - env:
+        - name: BARREF
+          valueFrom:
+            secretKeyRef:
+              key: baaaaaar
+              name: bar
+        - name: FOOREF
+          valueFrom:
+            secretKeyRef:
+              key: fooooooo
+              name: foo
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: mongodb-secret
+        envFrom:
+        - secretRef:
+            name: regular-statefulset-env
+        image: mongodb
+        imagePullPolicy: Always
+        name: regular-statefulset
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: regular-statefulset
+      enableServiceLinks: false
+      imagePullSecrets:
+      - name: regular-statefulset-image-pull-secret
+      restartPolicy: Always
+  updateStrategy: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.service: regular-statefulset
+      name: regular-statefulset
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+    status: {}
+status:
+  availableReplicas: 0
+  replicas: 0

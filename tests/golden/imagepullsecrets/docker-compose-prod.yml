@@ -1,0 +1,76 @@
+version: '3.4'
+services:
+  regular-deployment:
+    image: nginx
+    labels:
+      k8ify.imagePullSecret: '$REGULAR_DEPLOYMENT_IMAGEPULLSECRET'
+    environment:
+      - FOO
+      - BAR=${BAR}
+      - something_else=${BAZ}
+      - "PASSWORD=$_ref_:mongodb-secret:password"
+      - "FOOREF=$_ref_:foo:fooooooo"
+      - "BARREF=$_ref_:bar:baaaaaar"
+  
+  regular-statefulset:
+    image: mongodb
+    labels:
+      k8ify.imagePullSecret: '$REGULAR_STATEFULSET_IMAGEPULLSECRET'
+      k8ify.singleton: true
+    volumes:
+      - regular-statefulset:/data
+    environment:
+      - FOO
+      - BAR=${BAR}
+      - something_else=${BAZ}
+      - "PASSWORD=$_ref_:mongodb-secret:password"
+      - "FOOREF=$_ref_:foo:fooooooo"
+      - "BARREF=$_ref_:bar:baaaaaar"  
+  
+  part-of-deployment:
+    image: nginx-frontend
+    labels:
+      k8ify.imagePullSecret: '$PART_OF_DEPLOYMENT_IMAGEPULLSECRET'
+    environment:
+      - FOO
+      - BAR=${BAR}
+      - something_else=${BAZ}
+      - "PASSWORD=$_ref_:mongodb-secret:password"
+      - "FOOREF=$_ref_:foo:fooooooo"
+      - "BARREF=$_ref_:bar:baaaaaar"
+  
+  part-of-deployment-sidecar:
+    image: php-backend
+    labels:
+      k8ify.imagePullSecret: '$PART_OF_DEPLOYMENT_SIDECAR_IMAGEPULLSECRET'
+      k8ify.partOf: 'part-of-deployment'
+  
+  part-of-statefulset:
+    labels:
+      k8ify.imagePullSecret: '$PART_OF_STATEFULSET_IMAGEPULLSECRET'
+      k8ify.singleton: true
+    image: postgres
+    volumes:
+      - part-of-statefulset:/data
+    environment:
+      - FOO
+      - BAR=${BAR}
+      - something_else=${BAZ}
+      - "PASSWORD=$_ref_:mongodb-secret:password"
+      - "FOOREF=$_ref_:foo:fooooooo"
+      - "BARREF=$_ref_:bar:baaaaaar"
+  
+  part-of-statefulset-sidecar:
+    labels:
+      k8ify.imagePullSecret: '$PART_OF_STATEFULSET_SIDECAR_IMMAGEPULLSECRET'
+      k8ify.partOf: 'part-of-statefulset'
+      k8ify.singleton: true
+    image: pgpool
+
+volumes:
+  regular-statefulset:
+    labels:
+      k8ify.singleton: true
+  part-of-statefulset:
+    labels:
+      k8ify.singleton: true
