@@ -250,8 +250,9 @@ func composeServiceToStatefulSet(
 	)
 
 	statefulset.Spec = apps.StatefulSetSpec{
-		Replicas: composeServiceToReplicas(workload.AsCompose()),
-		Template: templateSpec,
+		ServiceName: workload.Name + refSlug,
+		Replicas:    composeServiceToReplicas(workload.AsCompose()),
+		Template:    templateSpec,
 		Selector: &metav1.LabelSelector{
 			MatchLabels: labels,
 		},

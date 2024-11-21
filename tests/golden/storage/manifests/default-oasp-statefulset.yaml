@@ -11,7 +11,7 @@ spec:
     matchLabels:
       k8ify.ref-slug: oasp
       k8ify.service: default
-  serviceName: ""
+  serviceName: default-oasp
   template:
     metadata:
       creationTimestamp: null

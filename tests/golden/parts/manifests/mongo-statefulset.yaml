@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       k8ify.service: mongo
-  serviceName: ""
+  serviceName: mongo
   template:
     metadata:
       creationTimestamp: null
