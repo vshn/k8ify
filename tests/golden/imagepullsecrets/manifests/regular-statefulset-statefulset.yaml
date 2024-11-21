@@ -9,7 +9,7 @@ spec:
   selector:
     matchLabels:
       k8ify.service: regular-statefulset
-  serviceName: ""
+  serviceName: regular-statefulset
   template:
     metadata:
       creationTimestamp: null
