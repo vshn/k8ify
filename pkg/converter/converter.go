@@ -163,7 +163,7 @@ func composeServiceToPullSecret(authConf string, name string, labels map[string]
 	secret.APIVersion = "v1"
 	secret.Kind = "Secret"
 	secret.Type = core.SecretTypeDockerConfigJson
-	secret.Name = name + "-image-pull"
+	secret.Name = name + "-image-pull-secret"
 	secret.Labels = labels
 	secret.Annotations = util.Annotations(labels, "Secret")
 	secret.StringData = map[string]string{".dockerconfigjson": authConf}
@@ -292,7 +292,7 @@ func composeServiceToPodTemplate(
 			workload.Name+refSlug,
 			labels)
 		secrets = append(secrets, *imagePullSecret)
-		imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name + "-secret"})
+		imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name})
 	}
 	for _, part := range workload.GetParts() {
 		c, s, cvs := composeServiceToContainer(part, refSlug, projectVolumes, labels)
@@ -306,7 +306,7 @@ func composeServiceToPodTemplate(
 				part.Name+refSlug,
 				labels)
 			secrets = append(secrets, *imagePullSecret)
-			imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name + "-secret"})
+			imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name})
 
 		}
 		maps.Copy(volumes, cvs)
