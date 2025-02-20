@@ -89,12 +89,11 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	logrus.Infof("wrote %d persistentVolumeClaims\n", len(objects.PersistentVolumeClaims))
 
 	for _, secret := range objects.Secrets {
-		outputSuffix := "-secret.yaml"
-		hasSuffix := strings.HasSuffix(secret.Name, "-secret")
-		if hasSuffix {
-			outputSuffix = ".yaml"
+		manifestName := secret.Name
+		if !strings.HasSuffix(manifestName, "-secret") {
+			manifestName += "-secret"
 		}
-		err := writeManifest(&secret, outputDir+"/"+secret.Name+outputSuffix)
+		err := writeManifest(&secret, outputDir+"/"+manifestName+".yaml")
 		if err != nil {
 			return err
 		}
