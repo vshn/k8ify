@@ -1,12 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
 
-	composeLoader "github.com/compose-spec/compose-go/loader"
-	composeTypes "github.com/compose-spec/compose-go/types"
+	composeLoader "github.com/compose-spec/compose-go/v2/loader"
+	composeTypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -95,7 +96,10 @@ func Main(args []string) int {
 		ConfigFiles: composeConfigFiles,
 		Environment: env,
 	}
-	project, err := composeLoader.Load(configDetails)
+	project, err := composeLoader.LoadWithContext(context.Background(), configDetails, func(options *composeLoader.Options) {
+		// TODO: find better solution than hardcoding
+		options.SetProjectName(`k8ify`, false)
+	})
 	if err != nil {
 		logrus.Error(err)
 		return 1
