@@ -2,6 +2,6 @@
 environments:
   test:
     vars:
-      FOO : "one"
-      BAR : "two"
-      BAZ : "three"
+      FOO: "one"
+      BAR: "two"
+      BAZ: "three"

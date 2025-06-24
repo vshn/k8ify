@@ -1,4 +1,3 @@
-version: '3.4'
 services:
   portal:
     image: image-registry.openshift-image-registry.svc:5000/portal/portal:latest
@@ -6,11 +5,11 @@ services:
       replicas: 2
       resources:
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 2G
     labels:
-      k8ify.expose.8001: 'portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud'
-      k8ify.expose.9001: 'portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud'
+      k8ify.expose.8001: "portal-k8ify.apps.cloudscale-lpg-2.appuio.cloud"
+      k8ify.expose.9001: "portal-k8ify-admin.apps.cloudscale-lpg-2.appuio.cloud"
       k8ify.share-storage: true
       k8ify.liveness.path: /health/alive
       k8ify.readiness.path: /health/ready
@@ -40,7 +39,7 @@ services:
         limits:
           memory: 8G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 4G
 
 volumes:
