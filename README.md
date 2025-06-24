@@ -4,6 +4,13 @@
 
 This project adheres to [Semantic Versioning][SemVer] and tries to not break functionality between major versions.
 
+## Breaking Changes
+
+First things first.
+
+### v1 to v2
+* We've upgraded the compose-go library from v1 to v2. This can affect parsing of the compose file; in particular v1 sorted arrays while parsing and v2 keeps the ordering as it is, which can affect "ports" and "volumes" arrays. Please check the resulting manifests for changes before applying them to your cluster. If necessary change the order of array elements in your compose files to match the previous output.
+
 
 ## Goal & Purpose
 
