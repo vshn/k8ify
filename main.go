@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -95,7 +96,7 @@ func Main(args []string) int {
 		ConfigFiles: composeConfigFiles,
 		Environment: env,
 	}
-	project, err := composeLoader.Load(configDetails, func(opts *composeLoader.Options) { opts.SetProjectName("k8ify", true) })
+	project, err := composeLoader.LoadWithContext(context.Background(), configDetails, func(opts *composeLoader.Options) { opts.SetProjectName("k8ify", true) })
 	if err != nil {
 		logrus.Errorf("Loading compose configuration: %s", err)
 		return 1
