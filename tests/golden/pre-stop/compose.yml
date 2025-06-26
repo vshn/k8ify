@@ -1,0 +1,7 @@
+services:
+  nginx:
+    image: docker.io/library/nginx
+    ports:
+      - '8080:80'
+    pre_stop:
+      - command: ["/bin/sh", "echo", "\"shutting down....\""]
