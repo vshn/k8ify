@@ -8,16 +8,16 @@ type ModifiedImagesFlag struct {
 	Values []string
 }
 
-func (this *ModifiedImagesFlag) Set(value string) error {
-	this.Values = append(this.Values, value)
+func (f *ModifiedImagesFlag) Set(value string) error {
+	f.Values = append(f.Values, value)
 	return nil
 }
 
-func (this *ModifiedImagesFlag) String() string {
-	return fmt.Sprintf("%v", this.Values)
+func (f *ModifiedImagesFlag) String() string {
+	return fmt.Sprintf("%v", f.Values)
 }
 
-func (this *ModifiedImagesFlag) Type() string {
+func (f *ModifiedImagesFlag) Type() string {
 	return "myapp:latest"
 }
 
@@ -25,16 +25,16 @@ type ShellEnvFilesFlag struct {
 	Values []string
 }
 
-func (this *ShellEnvFilesFlag) Set(value string) error {
-	this.Values = append(this.Values, value)
+func (f *ShellEnvFilesFlag) Set(value string) error {
+	f.Values = append(f.Values, value)
 	return nil
 }
 
-func (this *ShellEnvFilesFlag) String() string {
-	return fmt.Sprintf("%v", this.Values)
+func (f *ShellEnvFilesFlag) String() string {
+	return fmt.Sprintf("%v", f.Values)
 }
 
-func (this *ShellEnvFilesFlag) Type() string {
+func (f *ShellEnvFilesFlag) Type() string {
 	return ".env"
 }
 
@@ -42,15 +42,15 @@ type ProviderFlag struct {
 	value string
 }
 
-func (this *ProviderFlag) Set(value string) error {
-	this.value = value
+func (f *ProviderFlag) Set(value string) error {
+	f.value = value
 	return nil
 }
 
-func (this *ProviderFlag) String() string {
-	return this.value
+func (f *ProviderFlag) String() string {
+	return f.value
 }
 
-func (this *ProviderFlag) Type() string {
+func (f *ProviderFlag) Type() string {
 	return "appuio-cloudscale"
 }
