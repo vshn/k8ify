@@ -383,6 +383,7 @@ func composeServiceToContainer(
 	volumeMounts = append(volumeMounts, emptyDirVolumeMounts...)
 
 	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(workload)
+	lifecycle := composeServiceToLifecycle(workload)
 	containerPorts := composeServicePortsToK8sContainerPorts(workload)
 	resources := composeServiceToResourceRequirements(composeService)
 	secret := composeServiceToSecret(workload, refSlug, labels)
@@ -434,6 +435,7 @@ func composeServiceToContainer(
 		EnvFrom:         envFrom,
 		Env:             env,
 		VolumeMounts:    volumeMounts,
+		Lifecycle:       lifecycle,
 		LivenessProbe:   livenessProbe,
 		ReadinessProbe:  readinessProbe,
 		StartupProbe:    startupProbe,
@@ -680,6 +682,26 @@ func composeServiceToProbes(workload *ir.Service) (*core.Probe, *core.Probe, *co
 	return livenessProbe, readinessProbe, startupProbe
 }
 
+func composeServiceToLifecycle(workload *ir.Service) *core.Lifecycle {
+	composeService := workload.AsCompose()
+	if len(composeService.PreStop) == 0 {
+		return nil
+	}
+	if len(composeService.PreStop) > 1 {
+		return nil
+	}
+
+	cmd := composeService.PreStop[0]
+
+	return &core.Lifecycle{
+		PreStop: &core.LifecycleHandler{
+			Exec: &core.ExecAction{
+				Command: cmd.Command,
+			},
+		},
+	}
+}
+
 func composeServiceToResourceRequirements(composeService composeTypes.ServiceConfig) core.ResourceRequirements {
 	requestsMap := core.ResourceList{}
 	limitsMap := core.ResourceList{}
@@ -687,7 +709,7 @@ func composeServiceToResourceRequirements(composeService composeTypes.ServiceCon
 	if composeService.Deploy != nil {
 		if composeService.Deploy.Resources.Reservations != nil {
 			// NanoCPU appears to be a misnomer, it's actually a float indicating the number of CPU cores, nothing 'nano'
-			cpuRequest := composeService.Deploy.Resources.Reservations.NanoCPUs
+			cpuRequest := composeService.Deploy.Resources.Reservations.NanoCPUs.Value()
 			if cpuRequest > 0 {
 				requestsMap["cpu"] = resource.MustParse(fmt.Sprintf("%f", cpuRequest))
 				limitsMap["cpu"] = resource.MustParse(fmt.Sprintf("%f", cpuRequest*10.0))
@@ -701,7 +723,7 @@ func composeServiceToResourceRequirements(composeService composeTypes.ServiceCon
 		if composeService.Deploy.Resources.Limits != nil {
 			// If there are explicit limits configured we ignore the defaults calculated from the requests
 			limitsMap = core.ResourceList{}
-			cpuLimit := composeService.Deploy.Resources.Limits.NanoCPUs
+			cpuLimit := composeService.Deploy.Resources.Limits.NanoCPUs.Value()
 			if cpuLimit > 0 {
 				limitsMap["cpu"] = resource.MustParse(fmt.Sprintf("%f", cpuLimit))
 			}
