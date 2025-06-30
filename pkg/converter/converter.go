@@ -955,9 +955,9 @@ type Objects struct {
 	Others                 []unstructured.Unstructured
 }
 
-func (this Objects) Append(other Objects) Objects {
+func (o Objects) Append(other Objects) Objects {
 	// Merge PVCs while avoiding duplicates based on the name
-	pvcs := this.PersistentVolumeClaims
+	pvcs := o.PersistentVolumeClaims
 	nameSet := make(map[string]bool)
 	for _, pvc := range pvcs {
 		nameSet[pvc.Name] = true
@@ -970,13 +970,13 @@ func (this Objects) Append(other Objects) Objects {
 	}
 
 	return Objects{
-		Deployments:            append(this.Deployments, other.Deployments...),
-		StatefulSets:           append(this.StatefulSets, other.StatefulSets...),
-		Services:               append(this.Services, other.Services...),
+		Deployments:            append(o.Deployments, other.Deployments...),
+		StatefulSets:           append(o.StatefulSets, other.StatefulSets...),
+		Services:               append(o.Services, other.Services...),
 		PersistentVolumeClaims: pvcs,
-		Secrets:                append(this.Secrets, other.Secrets...),
-		Ingresses:              append(this.Ingresses, other.Ingresses...),
-		PodDisruptionBudgets:   append(this.PodDisruptionBudgets, other.PodDisruptionBudgets...),
-		Others:                 append(this.Others, other.Others...),
+		Secrets:                append(o.Secrets, other.Secrets...),
+		Ingresses:              append(o.Ingresses, other.Ingresses...),
+		PodDisruptionBudgets:   append(o.PodDisruptionBudgets, other.PodDisruptionBudgets...),
+		Others:                 append(o.Others, other.Others...),
 	}
 }

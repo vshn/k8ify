@@ -69,7 +69,7 @@ func Main(args []string) int {
 	for _, shellEnvFile := range shellEnvFiles.Values {
 		err := godotenv.Load(shellEnvFile)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("Loading dotfiles: %s", err)
 			return 1
 		}
 	}
@@ -96,12 +96,9 @@ func Main(args []string) int {
 		ConfigFiles: composeConfigFiles,
 		Environment: env,
 	}
-	project, err := composeLoader.LoadWithContext(context.Background(), configDetails, func(options *composeLoader.Options) {
-		// TODO: find better solution than hardcoding
-		options.SetProjectName(`k8ify`, false)
-	})
+	project, err := composeLoader.LoadWithContext(context.Background(), configDetails, func(opts *composeLoader.Options) { opts.SetProjectName("k8ify", true) })
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("Loading compose configuration: %s", err)
 		return 1
 	}
 
@@ -125,7 +122,7 @@ func Main(args []string) int {
 
 	err = internal.WriteManifests(config.OutputDir, objects)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("Writing manifests: %s", err)
 		return 1
 	}
 
