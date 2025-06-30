@@ -767,12 +767,12 @@ func CallExternalConverter(resourceName string, options map[string]string) (unst
 		for _, line := range strings.Split(string(output), "\n") {
 			logrus.Error(line)
 		}
-		return unstructured.Unstructured{}, fmt.Errorf("Could not convert service '%s' using command '%s': %w", resourceName, options["cmd"], err)
+		return unstructured.Unstructured{}, fmt.Errorf("could not convert service '%s' using command '%s': %w", resourceName, options["cmd"], err)
 	}
 	otherResource := unstructured.Unstructured{}
 	err = yaml.Unmarshal(output, &otherResource)
 	if err != nil {
-		return unstructured.Unstructured{}, fmt.Errorf("Could not convert service '%s' using command '%s': %w", resourceName, options["cmd"], err)
+		return unstructured.Unstructured{}, fmt.Errorf("could not convert service '%s' using command '%s': %w", resourceName, options["cmd"], err)
 	}
 	return otherResource, nil
 }
