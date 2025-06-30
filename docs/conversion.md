@@ -171,6 +171,14 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: myapp-data
+          # By default no lifecycle hooks are configured but they can be configured via `services.$name.pre_start` and `$services.$name.pre_stop`.
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - echo
+                  - '"shutting down...."'
           # By default both a livenessProbe and startupProbe are set up.
           # `services.$name.labels["k8ify.liveness"]` and sub-labels
           livenessProbe:
@@ -305,6 +313,14 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: myapp-data
+          # By default no lifecycle hooks are configured but they can be configured via `services.$name.pre_start` and `$services.$name.pre_stop`.
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - echo
+                  - '"shutting down...."'
           # By default both a livenessProbe and startupProbe are set up.
           # `services.$name.labels["k8ify.liveness"]` and sub-labels
           livenessProbe:
@@ -495,6 +511,8 @@ services:
     ports:
       - "8001:8000"
       - "9001:9000"
+    pre_stop:
+      - command: ["/bin/sh", "echo", "\"shutting down....\""]
     volumes:
       - "./:/src"
       - "myapp_data:/data"
