@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.4
 
 require (
-	github.com/compose-spec/compose-go/v2 v2.6.5
+	github.com/compose-spec/compose-go/v2 v2.7.1
 	github.com/docker/go-units v0.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/sirupsen/logrus v1.9.3
