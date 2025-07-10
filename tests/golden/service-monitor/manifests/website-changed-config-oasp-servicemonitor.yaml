@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: website-changed-config
+  name: website-changed-config-oasp
+spec:
+  endpoints:
+  - interval: 20s
+    path: /v1/metrics
+    port: "8081"
+    scheme: https
+  namespaceSelector: {}
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: website-changed-config
