@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: website-with-multiple-ports-with-names
+  name: website-with-multiple-ports-with-names-oasp
+spec:
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: website-with-multiple-ports-with-names
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: website-with-multiple-ports-with-names
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - website-with-multiple-ports-with-names
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - image: docker.io/library/nginx
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
+        name: website-with-multiple-ports-with-names-oasp
+        ports:
+        - containerPort: 80
+        - containerPort: 80
+        - containerPort: 80
+        resources: {}
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
+      enableServiceLinks: false
+      restartPolicy: Always
+status: {}

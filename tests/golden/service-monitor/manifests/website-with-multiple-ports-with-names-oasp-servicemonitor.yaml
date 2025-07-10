@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: website-with-multiple-ports-with-names
+  name: website-with-multiple-ports-with-names-oasp
+spec:
+  endpoints:
+  - interval: 30s
+    path: /actuator/metrics
+    port: "8081"
+    scheme: http
+  namespaceSelector: {}
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: website-with-multiple-ports-with-names
