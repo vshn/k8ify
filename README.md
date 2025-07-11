@@ -155,6 +155,19 @@ This replaces the TCP based health check by a more specific HTTP(S) check.
 | `k8ify.readiness.*` | All the sub-values work the same as for `k8ify.liveness` incl. defaults. No values are copied over. However the readiness check is disabled by default. |
 | `k8ify.readiness.enabled: false` | Enable or disable the readiness check. Default is false. |
 
+#### Prometheus ServiceMonitor
+
+If the `k8ify.prometheus.serviceMonitor` label is set to true for a service, a [Prometheus ServiceMonitor](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.ServiceMonitor) manifest will be emitted.
+By default, the first port is used as endpoint.
+
+| Label  | Effect                                                                                           |
+|--------|--------------------------------------------------------------------------------------------------|
+| `k8ify.prometheus.serviceMonitor: true` | Emit a ServiceMonitor manifest if `true`. Default is `false`. |
+| `k8ify.prometheus.serviceMonitor.interval: 30s` | Interval to use. Default is `30s`. |
+| `k8ify.prometheus.serviceMonitor.path: /actuator/metrics` | Path to use. Default is `/actuator/metrics`. |
+| `k8ify.prometheus.serviceMonitor.scheme: http` | Scheme to use. Default is `http`. |
+| `k8ify.prometheus.serviceMonitor.endpoint.name: 8080` | Port to use for ServiceMonitor. References the published port number. Default is the first port. |
+
 #### Target Cluster Configuration
 
 There are some cases in which the output of k8ify needs to be different based on the target cluster's configuration. To make this work some properties of the target cluster can be configured via the `x-targetCfg` root key in the Compose file.

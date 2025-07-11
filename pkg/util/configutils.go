@@ -2,13 +2,12 @@ package util
 
 import (
 	"fmt"
+	core "k8s.io/api/core/v1"
 	"maps"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
-
-	core "k8s.io/api/core/v1"
 
 	"github.com/docker/go-units"
 	"github.com/sirupsen/logrus"
@@ -109,6 +108,35 @@ func PartOf(labels map[string]string) *string {
 
 func ImagePullSecret(labels map[string]string) *string {
 	return GetOptional(labels, "k8ify.imagePullSecret")
+}
+
+// ServiceMonitorConfigPointer Parses the config values for serviceMonitor
+func ServiceMonitorConfigPointer(labels map[string]string) *ServiceMonitorConfig {
+	processValue := func(s *string) *string {
+		if s == nil {
+			return nil
+		}
+		trimmed := strings.Trim(*s, " \t")
+		if trimmed == "" {
+			return nil
+		}
+		return &trimmed
+	}
+	return &ServiceMonitorConfig{
+		Enabled:      GetBoolean(labels, "k8ify.prometheus.serviceMonitor"),
+		Interval:     processValue(GetOptional(labels, "k8ify.prometheus.serviceMonitor.interval")),
+		Path:         processValue(GetOptional(labels, "k8ify.prometheus.serviceMonitor.path")),
+		Scheme:       processValue(GetOptional(labels, "k8ify.prometheus.serviceMonitor.scheme")),
+		EndpointName: processValue(GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.name")),
+	}
+}
+
+type ServiceMonitorConfig struct {
+	Enabled      bool
+	Interval     *string
+	Path         *string
+	Scheme       *string
+	EndpointName *string
 }
 
 // StorageSize determines the requested storage size for a volume, or a
