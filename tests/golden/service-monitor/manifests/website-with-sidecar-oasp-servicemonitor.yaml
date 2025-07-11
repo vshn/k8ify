@@ -12,6 +12,10 @@ spec:
     path: /v2/metrics
     port: "8083"
     scheme: https
+  - interval: 30s
+    path: /actuator/metrics
+    port: "8084"
+    scheme: http
   namespaceSelector: {}
   selector:
     matchLabels:

@@ -517,7 +517,17 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 	if !config.Enabled {
 		return []ServiceMonitor{}
 	}
-	endpoint := createServiceMonitorEndpoint(servicePorts, config)
+	endpoints := []prometheusTypes.Endpoint{createServiceMonitorEndpoint(servicePorts, config)}
+	for _, part := range workload.GetParts() {
+		partConfig := util.ServiceMonitorConfigPointer(part.Labels())
+		if partConfig.Enabled {
+			partPorts := composeServicePortsToK8sServicePorts(part)
+			endpoints = append(endpoints, createServiceMonitorEndpoint(partPorts, partConfig))
+		}
+		if len(part.GetParts()) != 0 {
+			logrus.Warnf("Detected recursive partOf structure. ServiceMonitors cannot be emitted for recursive partOf structures.")
+		}
+	}
 
 	return []ServiceMonitor{
 		{
@@ -530,9 +540,7 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 				Labels: labels,
 			},
 			Spec: prometheusTypes.ServiceMonitorSpec{
-				Endpoints: []prometheusTypes.Endpoint{
-					endpoint,
-				},
+				Endpoints: endpoints,
 				Selector: metav1.LabelSelector{
 					MatchLabels: labels,
 				},
