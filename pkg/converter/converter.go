@@ -574,6 +574,10 @@ func createServiceMonitorEndpoint(name string, servicePorts []core.ServicePort, 
 	endpoint.BasicAuth = basicAuth
 	secret.StringData = util.AppendMap(secret.StringData, basicAuthEntries)
 
+	tlsConfig, tlsConfigEntries := createTlsConfigForEndpoint(secretName, labels)
+	endpoint.TLSConfig = tlsConfig
+	secret.StringData = util.AppendMap(secret.StringData, tlsConfigEntries)
+
 	var secretsList []core.Secret
 	if len(secret.StringData) > 0 {
 		secretsList = append(secretsList, secret)
@@ -627,20 +631,60 @@ func createBasicAuthForEndpoint(secretName string, labels map[string]string) (*p
 		"password": basicAuthConfig.Password,
 	}
 	basicAuth := &prometheusTypes.BasicAuth{
-		Username: core.SecretKeySelector{
-			LocalObjectReference: core.LocalObjectReference{
-				Name: secretName,
-			},
-			Key: "username",
-		},
-		Password: core.SecretKeySelector{
-			LocalObjectReference: core.LocalObjectReference{
-				Name: secretName,
-			},
-			Key: "password",
-		},
+		Username: secretKeySelector(secretName, "username"),
+		Password: secretKeySelector(secretName, "password"),
 	}
 	return basicAuth, secretEntries
+}
+
+func createTlsConfigForEndpoint(secretName string, labels map[string]string) (*prometheusTypes.TLSConfig, map[string]string) {
+	labelTlsConfig, _ := ir.ServiceMonitorTlsConfigPointer(labels)
+	if labelTlsConfig == nil {
+		return nil, map[string]string{}
+	}
+
+	safeTlsConfig := prometheusTypes.SafeTLSConfig{
+		InsecureSkipVerify: labelTlsConfig.InsecureSkipVerify,
+		MaxVersion:         labelTlsConfig.MaxVersion,
+		MinVersion:         labelTlsConfig.MinVersion,
+		ServerName:         labelTlsConfig.ServerName,
+	}
+
+	secretEntries := map[string]string{}
+	if labelTlsConfig.Ca != nil {
+		secretKey := "ca"
+		secretEntries[secretKey] = *labelTlsConfig.Ca
+		safeTlsConfig.CA = prometheusTypes.SecretOrConfigMap{
+			Secret: util.GetPointer(secretKeySelector(secretName, secretKey)),
+		}
+	}
+
+	if labelTlsConfig.Cert != nil {
+		secretKey := "cert"
+		secretEntries[secretKey] = *labelTlsConfig.Cert
+		safeTlsConfig.Cert = prometheusTypes.SecretOrConfigMap{
+			Secret: util.GetPointer(secretKeySelector(secretName, secretKey)),
+		}
+	}
+
+	if labelTlsConfig.KeySecretValue != nil {
+		secretKey := "key"
+		secretEntries[secretKey] = *labelTlsConfig.KeySecretValue
+		safeTlsConfig.KeySecret = util.GetPointer(secretKeySelector(secretName, secretKey))
+	}
+
+	return util.GetPointer(prometheusTypes.TLSConfig{
+		SafeTLSConfig: safeTlsConfig,
+	}), secretEntries
+}
+
+func secretKeySelector(secretName string, secretKey string) core.SecretKeySelector {
+	return core.SecretKeySelector{
+		LocalObjectReference: core.LocalObjectReference{
+			Name: secretName,
+		},
+		Key: secretKey,
+	}
 }
 
 func composeServiceToIngress(workload *ir.Service, refSlug string, services []core.Service, labels map[string]string, targetCfg ir.TargetCfg) *networking.Ingress {

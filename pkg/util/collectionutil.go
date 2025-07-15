@@ -11,3 +11,13 @@ func AppendMap[KEY comparable, VALUE any](first map[KEY]VALUE, second map[KEY]VA
 	}
 	return first
 }
+
+func FilterNilErrors(list []error) []error {
+	var result []error
+	for _, item := range list {
+		if item != nil {
+			result = append(result, item)
+		}
+	}
+	return result
+}

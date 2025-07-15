@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	composeTypes "github.com/compose-spec/compose-go/v2/types"
+	prometheusTypes "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/vshn/k8ify/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -273,5 +274,68 @@ func ServiceMonitorBasicAuthConfigPointer(labels map[string]string) (*ServiceMon
 	return &ServiceMonitorBasicAuthConfig{
 		Username: *username,
 		Password: *password,
+	}, nil
+}
+
+type ServiceMonitorTlsConfig struct {
+	Ca                 *string
+	Cert               *string
+	KeySecretValue     *string
+	InsecureSkipVerify *bool
+	MaxVersion         *prometheusTypes.TLSVersion
+	MinVersion         *prometheusTypes.TLSVersion
+	ServerName         *string
+}
+
+var (
+	tlsVersion10 = string(prometheusTypes.TLSVersion10)
+	tlsVersion11 = string(prometheusTypes.TLSVersion11)
+	tlsVersion12 = string(prometheusTypes.TLSVersion12)
+	tlsVersion13 = string(prometheusTypes.TLSVersion13)
+)
+
+func parseTlsVersion(string *string) (*prometheusTypes.TLSVersion, error) {
+	if string == nil {
+		return nil, nil
+	}
+	switch *string {
+	case tlsVersion10:
+		return util.GetPointer(prometheusTypes.TLSVersion10), nil
+	case tlsVersion11:
+		return util.GetPointer(prometheusTypes.TLSVersion11), nil
+	case tlsVersion12:
+		return util.GetPointer(prometheusTypes.TLSVersion12), nil
+	case tlsVersion13:
+		return util.GetPointer(prometheusTypes.TLSVersion13), nil
+	default:
+		return nil, fmt.Errorf("unknown TLSVersion: %v", *string)
+	}
+}
+
+func ServiceMonitorTlsConfigPointer(labels map[string]string) (*ServiceMonitorTlsConfig, *[]error) {
+	enabled := util.GetBoolean(labels, "k8ify.prometheus.serviceMonitor.endpoint.tlsConfig")
+	if !enabled {
+		return nil, nil
+	}
+	maxTlsVersion, errMaxVersion := parseTlsVersion(
+		util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.maxVersion")),
+	)
+	minTlsVersion, errMinVersion := parseTlsVersion(
+		util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.minVersion")),
+	)
+
+	errors := util.FilterNilErrors([]error{errMaxVersion, errMinVersion})
+	if len(errors) > 0 {
+		return nil, &errors
+	}
+
+	return &ServiceMonitorTlsConfig{
+		Ca:                 util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.ca")),
+		Cert:               util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.cert")),
+		KeySecretValue:     util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.keySecretValue")),
+		InsecureSkipVerify: util.FilterBlankBool(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.insecureSkipVerify")),
+		MaxVersion:         maxTlsVersion,
+		MinVersion:         minTlsVersion,
+		ServerName:         util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.serverName")),
 	}, nil
 }

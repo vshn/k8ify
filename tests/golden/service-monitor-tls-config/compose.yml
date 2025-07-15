@@ -1,0 +1,73 @@
+services:
+  skipVerify:
+    image: docker.io/library/nginx
+    ports:
+      - '8080:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.scheme: https
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig: "true"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.insecureSkipVerify: "true"
+
+  tlsConfig:
+    image: docker.io/library/nginx
+    ports:
+      - '8080:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.scheme: https
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig: "true"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.ca: |
+        -----BEGIN CERTIFICATE-----
+        MIIBhTCCASugAwIBAgIUL8fmlL3Z1OSjE+9GHNrCuDGWKZgwCgYIKoZIzj0EAwIw
+        GDEWMBQGA1UEAwwNTXkgTWluaW1hbCBDQTAeFw0yNTA3MTUxMzUyMTJaFw0yNjA3
+        MTAxMzUyMTJaMBgxFjAUBgNVBAMMDU15IE1pbmltYWwgQ0EwWTATBgcqhkjOPQIB
+        BggqhkjOPQMBBwNCAAQ6GrfF/1dVy3v97b+c6ZWRBAmdlBNV3qxfhdWS6KIwMvCr
+        DiRUhXOpcLA49HjLX9RfDpxyI8Nz/Nv12bMg5f3go1MwUTAdBgNVHQ4EFgQU7Zcx
+        nhcTn8t5cdCumGg7IKL39YwwHwYDVR0jBBgwFoAU7ZcxnhcTn8t5cdCumGg7IKL3
+        9YwwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiBeHxk5JKc1JpKF
+        TZU6u6Yo4ozduWSQxIH6jSzh7BOCTAIhAMDNTO4ilY+DAna/udskuXMcjsfI0kQY
+        U95t8zPBdnxh
+        -----END CERTIFICATE-----
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.cert: ${SERVICE_MONITOR_CERT}
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.insecureSkipVerify: "false"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.keySecretValue: ${SERVICE_MONITOR_KEY}
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.maxVersion: "TLS13"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.minVersion: "TLS10"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.serverName: "tlsconfig.svc"
+
+  basicAuth-tlsConfig:
+    image: docker.io/library/nginx
+    ports:
+      - '8080:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.scheme: https
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth: "true"
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username: $SERVICE_MONITOR_USERNAME
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password: $SERVICE_MONITOR_PASSWORD
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig: "true"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.ca: ${SERVICE_MONITOR_CA}
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.cert: ${SERVICE_MONITOR_CERT}
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.insecureSkipVerify: "false"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.keySecretValue: ${SERVICE_MONITOR_KEY}
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.maxVersion: "TLS12"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.minVersion: "TLS11"
+
+  basicAuth-tlsConfig_sidecar:
+    image: docker.io/library/nginx
+    ports:
+      - '8081:80'
+    labels:
+      k8ify.partOf: basicAuth-tlsConfig
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.scheme: https
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth: "true"
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username: $SERVICE_MONITOR_USERNAME
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password: $SERVICE_MONITOR_PASSWORD_2
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig: "true"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.ca: ${SERVICE_MONITOR_CA}
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.cert: ${SERVICE_MONITOR_CERT}
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.insecureSkipVerify: "false"
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.keySecretValue: ${SERVICE_MONITOR_KEY}
+      k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.maxVersion: "TLS13"
