@@ -140,6 +140,64 @@ func TestServiceMonitorConfig(t *testing.T) {
 	}
 }
 
+func TestServiceMonitorBasicAuthConfig(t *testing.T) {
+	assert := assert.New(t)
+	type LabelMap map[string]string
+
+	cases := []TestCase[LabelMap, *util.ServiceMonitorBasicAuthConfig]{
+		{
+			name:     "BasicAuthConfig_nothing_set",
+			input:    LabelMap{},
+			expected: &util.ServiceMonitorBasicAuthConfig{},
+		},
+		{
+			name:  "BasicAuthConfig_enabled",
+			input: LabelMap{"k8ify.prometheus.serviceMonitor.endpoint.basicAuth": "true"},
+			expected: &util.ServiceMonitorBasicAuthConfig{
+				Enabled:  true,
+				Username: "",
+				Password: "",
+			},
+		},
+		{
+			name:  "BasicAuthConfig_disabled",
+			input: LabelMap{"k8ify.prometheus.serviceMonitor.endpoint.basicAuth": "false"},
+			expected: &util.ServiceMonitorBasicAuthConfig{
+				Enabled: false,
+			},
+		},
+		{
+			name: "BasicAuthConfig_values_set",
+			input: LabelMap{
+				"k8ify.prometheus.serviceMonitor.endpoint.basicAuth":          "true",
+				"k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username": monitorUsername,
+				"k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password": monitorPassword,
+			},
+			expected: &util.ServiceMonitorBasicAuthConfig{
+				Enabled:  true,
+				Username: monitorUsername,
+				Password: monitorPassword,
+			},
+		},
+		{
+			name: "BasicAuthConfig_empty_strings",
+			input: LabelMap{
+				"k8ify.prometheus.serviceMonitor.endpoint.basicAuth":          "",
+				"k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username": "",
+				"k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password": "",
+			},
+			expected: &util.ServiceMonitorBasicAuthConfig{},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := util.ServiceMonitorBasicAuthConfigPointer(tc.input)
+
+			assert.Equal(tc.expected, actual, "BasicAuthConfigPointer(%v) should return %v", tc.input, tc.expected)
+		})
+	}
+}
+
 type TestCase[InParam any, OutParam any] struct {
 	name     string
 	input    InParam
@@ -151,4 +209,6 @@ var (
 	monitorPath         = "/actuator/health"
 	monitorScheme       = "http"
 	monitorEndpointName = "default"
+	monitorUsername     = "myuser"
+	monitorPassword     = "mypassword"
 )

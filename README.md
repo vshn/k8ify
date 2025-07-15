@@ -167,6 +167,9 @@ By default, the first port is used as endpoint.
 | `k8ify.prometheus.serviceMonitor.path: /actuator/metrics` | Path to use. Default is `/actuator/metrics`. |
 | `k8ify.prometheus.serviceMonitor.scheme: http` | Scheme to use. Default is `http`. |
 | `k8ify.prometheus.serviceMonitor.endpoint.name: 8080` | Port to use for ServiceMonitor. References the published port number. Default is the first port. |
+| `k8ify.prometheus.serviceMonitor.endpoint.basicAuth: true` | Enable BasicAuth for Endpoint. Default is `false` |
+| `k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username: "username"` | Username for BasicAuth for Endpoint. Default is `""`. |
+| `k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password: "password"` | Password for BasicAuth for Endpoint. Default is `""`. |
 
 #### Target Cluster Configuration
 
