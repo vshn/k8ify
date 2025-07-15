@@ -21,3 +21,4 @@ spec:
     matchLabels:
       k8ify.ref-slug: oasp
       k8ify.service: website-with-sidecar
+status: {}
