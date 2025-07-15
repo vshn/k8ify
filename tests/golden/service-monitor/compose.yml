@@ -1,0 +1,99 @@
+services:
+  website-defaults:
+    image: docker.io/library/nginx
+    ports:
+      - '8080:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+  website-changed-config:
+    image: docker.io/library/nginx
+    ports:
+      - '8081:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.interval: 20s
+      k8ify.prometheus.serviceMonitor.path: /v1/metrics
+      k8ify.prometheus.serviceMonitor.scheme: https
+  website-with-sidecar:
+    image: docker.io/library/nginx
+    ports:
+      - '8083:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.interval: 1m
+      k8ify.prometheus.serviceMonitor.path: /v2/metrics
+      k8ify.prometheus.serviceMonitor.scheme: https
+  sidecar:
+    image: docker.io/library/nginx
+    ports:
+      - '8084:80'
+    labels:
+      k8ify.partOf: website-with-sidecar
+      k8ify.prometheus.serviceMonitor: true
+  sidecar-of-sidecar:
+    image: docker.io/library/nginx
+    ports:
+      - '8085:80'
+    labels:
+      k8ify.partOf: sidecar
+      k8ify.prometheus.serviceMonitor: true
+  website-with-empty-string-values:
+    image: docker.io/library/nginx
+    ports:
+      - '8083:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.interval:
+      k8ify.prometheus.serviceMonitor.path:
+      k8ify.prometheus.serviceMonitor.scheme:
+  website-with-null-values:
+    image: docker.io/library/nginx
+    ports:
+      - '8083:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      # null treated by the compose parser as empty string
+      k8ify.prometheus.serviceMonitor.interval: null
+  website-with-multiple-ports:
+    image: docker.io/library/nginx
+    ports:
+      - '8081:80'
+      - '8082:80'
+      - '8083:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.interval: 20s
+      k8ify.prometheus.serviceMonitor.path: /v1/metrics
+      k8ify.prometheus.serviceMonitor.scheme: https
+      k8ify.prometheus.serviceMonitor.endpoint.name: 8082
+  # the name attribute is ignored
+  website-with-multiple-ports-with-names:
+    image: docker.io/library/nginx
+    ports:
+      - name: first-port
+        published: 8081
+        target: 80
+      - name: second-port
+        published: 8082
+        target: 80
+      - name: monitor-port
+        published: 8083
+        target: 80
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.endpoint.name: monitor-port
+  website-with-multiple-ports-with-names-using-published:
+    image: docker.io/library/nginx
+    ports:
+      - name: first-port
+        published: 8081
+        target: 80
+      - name: second-port
+        published: 8082
+        target: 80
+      - name: monitor-port
+        published: 8083
+        target: 80
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.endpoint.name: 8083

@@ -2,6 +2,8 @@ package converter
 
 import (
 	"fmt"
+	prometheusTypes "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"maps"
 	"os"
@@ -507,6 +509,81 @@ func composeServiceToServices(refSlug string, workload *ir.Service, servicePorts
 	return services
 }
 
+func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servicePorts []core.ServicePort, labels map[string]string) []ServiceMonitor {
+	if len(servicePorts) == 0 {
+		return []ServiceMonitor{}
+	}
+	config := util.ServiceMonitorConfigPointer(workload.Labels())
+	if !config.Enabled {
+		return []ServiceMonitor{}
+	}
+	endpoints := []prometheusTypes.Endpoint{createServiceMonitorEndpoint(servicePorts, config)}
+	for _, part := range workload.GetParts() {
+		partConfig := util.ServiceMonitorConfigPointer(part.Labels())
+		if partConfig.Enabled {
+			partPorts := composeServicePortsToK8sServicePorts(part)
+			endpoints = append(endpoints, createServiceMonitorEndpoint(partPorts, partConfig))
+		}
+		if len(part.GetParts()) != 0 {
+			logrus.Warnf("Detected recursive partOf structure. ServiceMonitors cannot be emitted for recursive partOf structures.")
+		}
+	}
+
+	return []ServiceMonitor{
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "ServiceMonitor",
+				APIVersion: "monitoring.coreos.com/v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   workload.Name + refSlug,
+				Labels: labels,
+			},
+			Spec: prometheusTypes.ServiceMonitorSpec{
+				Endpoints: endpoints,
+				Selector: metav1.LabelSelector{
+					MatchLabels: labels,
+				},
+			},
+		},
+	}
+}
+
+func createServiceMonitorEndpoint(servicePorts []core.ServicePort, config *util.ServiceMonitorConfig) prometheusTypes.Endpoint {
+	endpoint := prometheusTypes.Endpoint{
+		Interval: "30s",
+		Port:     servicePorts[0].Name,
+		Path:     "/actuator/metrics",
+		Scheme:   "http",
+	}
+	if config.Interval != nil {
+		endpoint.Interval = prometheusTypes.Duration(*config.Interval)
+	}
+	if config.Path != nil {
+		endpoint.Path = *config.Path
+	}
+	if config.Scheme != nil {
+		endpoint.Scheme = *config.Scheme
+	}
+	if config.EndpointName != nil {
+		found := false
+		for _, servicePort := range servicePorts {
+			if servicePort.Name == *config.EndpointName {
+				endpoint.Port = servicePort.Name
+				found = true
+				break
+			}
+		}
+		if !found {
+			logrus.WithFields(logrus.Fields{
+				"configuredPort": *config.EndpointName,
+				"usedPort":       endpoint.Port,
+			}).Warning("Port configuredPort not found, using usedPort.")
+		}
+	}
+	return endpoint
+}
+
 func composeServiceToIngress(workload *ir.Service, refSlug string, services []core.Service, labels map[string]string, targetCfg ir.TargetCfg) *networking.Ingress {
 	var service *core.Service
 	for _, s := range services {
@@ -814,6 +891,7 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 
 	servicePorts := composeServicePortsToK8sServicePorts(workload)
 	objects.Services = composeServiceToServices(refSlug, workload, servicePorts, labels)
+	objects.ServiceMonitors = composeServiceToServiceMonitors(refSlug, workload, servicePorts, labels)
 
 	// Find volumes used by this service and all its parts
 	rwoVolumes, rwxVolumes := workload.Volumes(projectVolumes)
@@ -942,6 +1020,12 @@ func composeServiceToPodDisruptionBudget(workload *ir.Service, refSlug string, l
 	return &podDisruptionBudget
 }
 
+type ServiceMonitor prometheusTypes.ServiceMonitor
+
+func (s ServiceMonitor) DeepCopyObject() runtime.Object {
+	panic("Needed for interface runtime.Object. Not implemented because it was not used yet.")
+}
+
 // Objects combines all possible resources the conversion process could produce
 type Objects struct {
 	// Deployments
@@ -950,6 +1034,7 @@ type Objects struct {
 	Services               []core.Service
 	PersistentVolumeClaims []core.PersistentVolumeClaim
 	Secrets                []core.Secret
+	ServiceMonitors        []ServiceMonitor
 	Ingresses              []networking.Ingress
 	PodDisruptionBudgets   []v1.PodDisruptionBudget
 	Others                 []unstructured.Unstructured
@@ -973,6 +1058,7 @@ func (o Objects) Append(other Objects) Objects {
 		Deployments:            append(o.Deployments, other.Deployments...),
 		StatefulSets:           append(o.StatefulSets, other.StatefulSets...),
 		Services:               append(o.Services, other.Services...),
+		ServiceMonitors:        append(o.ServiceMonitors, other.ServiceMonitors...),
 		PersistentVolumeClaims: pvcs,
 		Secrets:                append(o.Secrets, other.Secrets...),
 		Ingresses:              append(o.Ingresses, other.Ingresses...),

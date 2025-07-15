@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: website-with-null-values
+  name: website-with-null-values-oasp
+spec:
+  endpoints:
+  - interval: 30s
+    path: /actuator/metrics
+    port: "8083"
+    scheme: http
+  namespaceSelector: {}
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: website-with-null-values

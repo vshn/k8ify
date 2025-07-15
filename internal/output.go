@@ -80,6 +80,14 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	}
 	logrus.Infof("wrote %d services\n", len(objects.Services))
 
+	for _, serviceMonitor := range objects.ServiceMonitors {
+		err := writeManifest(&serviceMonitor, outputDir+"/"+serviceMonitor.Name+"-servicemonitor.yaml")
+		if err != nil {
+			return err
+		}
+	}
+	logrus.Infof("wrote %d servicemonitors\n", len(objects.ServiceMonitors))
+
 	for _, persistentVolumeClaim := range objects.PersistentVolumeClaims {
 		err := writeManifest(&persistentVolumeClaim, outputDir+"/"+persistentVolumeClaim.Name+"-persistentvolumeclaim.yaml")
 		if err != nil {
