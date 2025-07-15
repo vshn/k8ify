@@ -534,6 +534,10 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 		}
 	}
 	for i := range secrets {
+		secrets[i].TypeMeta = metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		}
 		secrets[i].Labels = labels
 	}
 	return []ServiceMonitor{
@@ -557,13 +561,34 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 }
 
 func createServiceMonitorEndpoint(name string, servicePorts []core.ServicePort, config *ir.ServiceMonitorConfig, labels map[string]string) (prometheusTypes.Endpoint, []core.Secret) {
+	endpoint := endpointPointer(config, servicePorts)
+	secretName := name + "-servicemonitor-" + endpoint.Port
+	secret := core.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: secretName,
+		},
+		StringData: map[string]string{},
+	}
+
+	basicAuth, basicAuthEntries := createBasicAuthForEndpoint(secretName, labels)
+	endpoint.BasicAuth = basicAuth
+	secret.StringData = util.AppendMap(secret.StringData, basicAuthEntries)
+
+	var secretsList []core.Secret
+	if len(secret.StringData) > 0 {
+		secretsList = append(secretsList, secret)
+	}
+
+	return endpoint, secretsList
+}
+
+func endpointPointer(config *ir.ServiceMonitorConfig, servicePorts []core.ServicePort) prometheusTypes.Endpoint {
 	endpoint := prometheusTypes.Endpoint{
 		Interval: "30s",
 		Port:     servicePorts[0].Name,
 		Path:     "/actuator/metrics",
 		Scheme:   "http",
 	}
-	var secrets []core.Secret
 	if config.Interval != nil {
 		endpoint.Interval = prometheusTypes.Duration(*config.Interval)
 	}
@@ -589,39 +614,33 @@ func createServiceMonitorEndpoint(name string, servicePorts []core.ServicePort, 
 			}).Warning("Port configuredPort not found, using usedPort.")
 		}
 	}
-	basicAuthConfig, err := ir.ServiceMonitorBasicAuthConfigPointer(labels)
-	if err == nil && basicAuthConfig != nil {
-		secretName := name + "-servicemonitor-" + endpoint.Port
-		secrets = append(secrets, core.Secret{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Secret",
-				APIVersion: "v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
+	return endpoint
+}
+
+func createBasicAuthForEndpoint(secretName string, labels map[string]string) (*prometheusTypes.BasicAuth, map[string]string) {
+	basicAuthConfig, _ := ir.ServiceMonitorBasicAuthConfigPointer(labels)
+	if basicAuthConfig == nil {
+		return nil, map[string]string{}
+	}
+	secretEntries := map[string]string{
+		"username": basicAuthConfig.Username,
+		"password": basicAuthConfig.Password,
+	}
+	basicAuth := &prometheusTypes.BasicAuth{
+		Username: core.SecretKeySelector{
+			LocalObjectReference: core.LocalObjectReference{
 				Name: secretName,
 			},
-			StringData: map[string]string{
-				"username": basicAuthConfig.Username,
-				"password": basicAuthConfig.Password,
+			Key: "username",
+		},
+		Password: core.SecretKeySelector{
+			LocalObjectReference: core.LocalObjectReference{
+				Name: secretName,
 			},
-		})
-		endpoint.BasicAuth = &prometheusTypes.BasicAuth{
-			Username: core.SecretKeySelector{
-				LocalObjectReference: core.LocalObjectReference{
-					Name: secretName,
-				},
-				Key: "username",
-			},
-			Password: core.SecretKeySelector{
-				LocalObjectReference: core.LocalObjectReference{
-					Name: secretName,
-				},
-				Key: "password",
-			},
-		}
+			Key: "password",
+		},
 	}
-
-	return endpoint, secrets
+	return basicAuth, secretEntries
 }
 
 func composeServiceToIngress(workload *ir.Service, refSlug string, services []core.Service, labels map[string]string, targetCfg ir.TargetCfg) *networking.Ingress {
