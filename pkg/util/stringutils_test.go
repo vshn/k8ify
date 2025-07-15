@@ -45,3 +45,43 @@ func TestByteArrayToAlpha(t *testing.T) {
 	}
 	assert.Equal(t, "vjyw9istw1eo0gijxmt8ogd0ittw5jzslzuqb70zyf4aes4kc2j913cu0sjpfva7hytf3gk486srdn7wpyrtoesukpqzoilrknub", util.ByteArrayToAlphaNum(maxHashValue))
 }
+
+func TestFilterBlankBool(t *testing.T) {
+	assert := assert.New(t)
+
+	cases := []testCase[string, *bool]{
+		{
+			name:     "empty",
+			input:    "",
+			expected: nil,
+		},
+		{
+			name:     "blank",
+			input:    " \t",
+			expected: nil,
+		},
+		{
+			name:     "true",
+			input:    "true",
+			expected: util.GetPointer(true),
+		},
+		{
+			name:     "false",
+			input:    "false",
+			expected: util.GetPointer(false),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := util.FilterBlankBool(&tc.input)
+
+			assert.Equal(tc.expected, actual, "FilterBlankBool(%v) should be %v", tc.input, tc.expected)
+		})
+	}
+}
+
+type testCase[InParam any, OutParam any] struct {
+	name     string
+	input    InParam
+	expected OutParam
+}

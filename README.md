@@ -167,9 +167,18 @@ By default, the first port is used as endpoint.
 | `k8ify.prometheus.serviceMonitor.path: /actuator/metrics` | Path to use. Default is `/actuator/metrics`. |
 | `k8ify.prometheus.serviceMonitor.scheme: http` | Scheme to use. Default is `http`. |
 | `k8ify.prometheus.serviceMonitor.endpoint.name: 8080` | Port to use for ServiceMonitor. References the published port number. Default is the first port. |
+| [BasicAuth](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.BasicAuth) | |
 | `k8ify.prometheus.serviceMonitor.endpoint.basicAuth: true` | Enable BasicAuth for Endpoint. Default is `false` |
 | `k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username: "username"` | Username for BasicAuth for Endpoint. Default is `""`. |
 | `k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password: "password"` | Password for BasicAuth for Endpoint. Default is `""`. |
+| [TlsConfig](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.SafeTLSConfig) | |
+| `k8ify.prometheus.serviceMonitor.endpoint.tlsConfig: "true"` | Enable TLS configuration for the endpoint. Default is `false`. |
+| `k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.ca: ${SERVICE_MONITOR_CA}` | CA certificate for TLS. |
+| `k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.cert: ${SERVICE_MONITOR_CERT}` | Client certificate for TLS. |
+| `k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.insecureSkipVerify: "false"` | Whether to skip TLS certificate verification. |
+| `k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.keySecretValue: ${SERVICE_MONITOR_KEY}` | Client key for TLS, typically a reference to a secret. |
+| `k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.maxVersion: "TLS13"` | Maximum TLS version to use. Options are `TLS10`, `TLS11`, `TLS12`, `TLS13`. |
+| `k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.minVersion: "TLS13"` | Minimum TLS version to use. Options are `TLS10`, `TLS11`, `TLS12`, `TLS13`. |
 
 #### Target Cluster Configuration
 

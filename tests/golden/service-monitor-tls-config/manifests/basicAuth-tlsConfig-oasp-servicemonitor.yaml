@@ -1,0 +1,67 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: basicAuth-tlsConfig
+  name: basicAuth-tlsConfig-oasp
+spec:
+  endpoints:
+  - basicAuth:
+      password:
+        key: password
+        name: basicAuth-tlsConfig-oasp-servicemonitor-8080
+      username:
+        key: username
+        name: basicAuth-tlsConfig-oasp-servicemonitor-8080
+    interval: 30s
+    path: /actuator/metrics
+    port: "8080"
+    scheme: https
+    tlsConfig:
+      ca:
+        secret:
+          key: ca
+          name: basicAuth-tlsConfig-oasp-servicemonitor-8080
+      cert:
+        secret:
+          key: cert
+          name: basicAuth-tlsConfig-oasp-servicemonitor-8080
+      insecureSkipVerify: false
+      keySecret:
+        key: key
+        name: basicAuth-tlsConfig-oasp-servicemonitor-8080
+      maxVersion: TLS12
+      minVersion: TLS11
+  - basicAuth:
+      password:
+        key: password
+        name: basicAuth-tlsConfig-oasp-servicemonitor-8081
+      username:
+        key: username
+        name: basicAuth-tlsConfig-oasp-servicemonitor-8081
+    interval: 30s
+    path: /actuator/metrics
+    port: "8081"
+    scheme: https
+    tlsConfig:
+      ca:
+        secret:
+          key: ca
+          name: basicAuth-tlsConfig-oasp-servicemonitor-8081
+      cert:
+        secret:
+          key: cert
+          name: basicAuth-tlsConfig-oasp-servicemonitor-8081
+      insecureSkipVerify: false
+      keySecret:
+        key: key
+        name: basicAuth-tlsConfig-oasp-servicemonitor-8081
+      maxVersion: TLS13
+  namespaceSelector: {}
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: basicAuth-tlsConfig
+status: {}
