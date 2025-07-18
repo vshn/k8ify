@@ -79,6 +79,13 @@ func GetOptional(labels map[string]string, key string) *string {
 	return nil
 }
 
+func GetOrDefault(labels map[string]string, key string, defaultValue string) string {
+	if val, ok := labels[key]; ok {
+		return val
+	}
+	return defaultValue
+}
+
 // IsSingleton determine whether a resource (according to its labels) should be
 // treated as a singleton.
 func IsSingleton(labels map[string]string) bool {
@@ -132,12 +139,26 @@ func ServiceMonitorConfigPointer(labels map[string]string) *ServiceMonitorConfig
 	}
 }
 
+func ServiceMonitorBasicAuthConfigPointer(labels map[string]string) *ServiceMonitorBasicAuthConfig {
+	return &ServiceMonitorBasicAuthConfig{
+		Enabled:  GetBoolean(labels, "k8ify.prometheus.serviceMonitor.endpoint.basicAuth"),
+		Username: GetOrDefault(labels, "k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username", ""),
+		Password: GetOrDefault(labels, "k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password", ""),
+	}
+}
+
 type ServiceMonitorConfig struct {
 	Enabled      bool
 	Interval     *string
 	Path         *string
 	Scheme       *string
 	EndpointName *string
+}
+
+type ServiceMonitorBasicAuthConfig struct {
+	Enabled  bool
+	Username string
+	Password string
 }
 
 // StorageSize determines the requested storage size for a volume, or a
