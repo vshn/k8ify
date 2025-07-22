@@ -514,7 +514,7 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 		return []ServiceMonitor{}, []core.Secret{}
 	}
 	config := ir.ServiceMonitorConfigPointer(workload.Labels())
-	if !config.Enabled {
+	if config == nil {
 		return []ServiceMonitor{}, []core.Secret{}
 	}
 
@@ -523,7 +523,7 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 	endpoints := []prometheusTypes.Endpoint{endpoint}
 	for _, part := range workload.GetParts() {
 		partConfig := ir.ServiceMonitorConfigPointer(part.Labels())
-		if partConfig.Enabled {
+		if partConfig != nil {
 			partPorts := composeServicePortsToK8sServicePorts(part)
 			monitorEndpoint, partSecrets := createServiceMonitorEndpoint(resourceName, partPorts, partConfig, part.Labels())
 			endpoints = append(endpoints, monitorEndpoint)

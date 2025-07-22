@@ -14,21 +14,17 @@ func TestServiceMonitorConfig(t *testing.T) {
 		{
 			name:          "ServiceMonitorConfig_nothing_set",
 			input:         LabelMap{},
+			expectedValue: nil,
+		},
+		{
+			name:          "ServiceMonitorConfig_enabled",
+			input:         LabelMap{"k8ify.prometheus.serviceMonitor": "true"},
 			expectedValue: &ServiceMonitorConfig{},
 		},
 		{
-			name:  "ServiceMonitorConfig_enabled",
-			input: LabelMap{"k8ify.prometheus.serviceMonitor": "true"},
-			expectedValue: &ServiceMonitorConfig{
-				Enabled: true,
-			},
-		},
-		{
-			name:  "ServiceMonitorConfig_disabled",
-			input: LabelMap{"k8ify.prometheus.serviceMonitor": "false"},
-			expectedValue: &ServiceMonitorConfig{
-				Enabled: false,
-			},
+			name:          "ServiceMonitorConfig_disabled",
+			input:         LabelMap{"k8ify.prometheus.serviceMonitor": "false"},
+			expectedValue: nil,
 		},
 		{
 			name: "ServiceMonitorConfig_values_set",
@@ -40,7 +36,6 @@ func TestServiceMonitorConfig(t *testing.T) {
 				"k8ify.prometheus.serviceMonitor.endpoint.name": monitorEndpointName,
 			},
 			expectedValue: &ServiceMonitorConfig{
-				Enabled:      true,
 				Interval:     &monitorInterval,
 				Path:         &monitorPath,
 				Scheme:       &monitorScheme,
@@ -56,7 +51,7 @@ func TestServiceMonitorConfig(t *testing.T) {
 				"k8ify.prometheus.serviceMonitor.scheme":        "",
 				"k8ify.prometheus.serviceMonitor.endpoint.name": "",
 			},
-			expectedValue: &ServiceMonitorConfig{},
+			expectedValue: nil,
 		},
 	}
 	for _, tc := range cases {

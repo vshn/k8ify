@@ -49,7 +49,7 @@ func ComposeServicePrecheck(inputs *ir.Inputs) {
 			}
 		}
 		serviceMonitorConfig := ir.ServiceMonitorConfigPointer(service.Labels())
-		if serviceMonitorConfig.Enabled {
+		if serviceMonitorConfig != nil {
 			_, err := ir.ServiceMonitorBasicAuthConfigPointer(service.Labels())
 			if err != nil {
 				logrus.Error(err.Error())

@@ -232,7 +232,6 @@ func (t TargetCfg) MaxExposeLength() int {
 // in one place for the ServiceMonitor.
 // We did not use prometheus.ServiceMonitor directly, because then the name would be: serviceMonitor.Endpoints[0].name
 type ServiceMonitorConfig struct {
-	Enabled      bool
 	Interval     *string
 	Path         *string
 	Scheme       *string
@@ -241,6 +240,10 @@ type ServiceMonitorConfig struct {
 
 // ServiceMonitorConfigPointer Parses the config values for serviceMonitor
 func ServiceMonitorConfigPointer(labels map[string]string) *ServiceMonitorConfig {
+	enabled := util.GetBoolean(labels, "k8ify.prometheus.serviceMonitor")
+	if !enabled {
+		return nil
+	}
 	processValue := func(s *string) *string {
 		if s == nil {
 			return nil
@@ -252,7 +255,6 @@ func ServiceMonitorConfigPointer(labels map[string]string) *ServiceMonitorConfig
 		return &trimmed
 	}
 	return &ServiceMonitorConfig{
-		Enabled:      util.GetBoolean(labels, "k8ify.prometheus.serviceMonitor"),
 		Interval:     processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.interval")),
 		Path:         processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.path")),
 		Scheme:       processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.scheme")),
