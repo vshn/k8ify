@@ -513,13 +513,13 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 	if len(servicePorts) == 0 {
 		return []ServiceMonitor{}
 	}
-	config := util.ServiceMonitorConfigPointer(workload.Labels())
+	config := ir.ServiceMonitorConfigPointer(workload.Labels())
 	if !config.Enabled {
 		return []ServiceMonitor{}
 	}
 	endpoints := []prometheusTypes.Endpoint{createServiceMonitorEndpoint(servicePorts, config)}
 	for _, part := range workload.GetParts() {
-		partConfig := util.ServiceMonitorConfigPointer(part.Labels())
+		partConfig := ir.ServiceMonitorConfigPointer(part.Labels())
 		if partConfig.Enabled {
 			partPorts := composeServicePortsToK8sServicePorts(part)
 			endpoints = append(endpoints, createServiceMonitorEndpoint(partPorts, partConfig))
@@ -549,7 +549,7 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 	}
 }
 
-func createServiceMonitorEndpoint(servicePorts []core.ServicePort, config *util.ServiceMonitorConfig) prometheusTypes.Endpoint {
+func createServiceMonitorEndpoint(servicePorts []core.ServicePort, config *ir.ServiceMonitorConfig) prometheusTypes.Endpoint {
 	endpoint := prometheusTypes.Endpoint{
 		Interval: "30s",
 		Port:     servicePorts[0].Name,

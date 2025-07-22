@@ -226,3 +226,35 @@ func (t TargetCfg) MaxExposeLength() int {
 	}
 	return 63
 }
+
+// ServiceMonitorConfig An intermediate struct that makes it easier to access all needed config values
+// in one place for the ServiceMonitor.
+// We did not use prometheus.ServiceMonitor directly, because then the name would be: serviceMonitor.Endpoints[0].name
+type ServiceMonitorConfig struct {
+	Enabled      bool
+	Interval     *string
+	Path         *string
+	Scheme       *string
+	EndpointName *string
+}
+
+// ServiceMonitorConfigPointer Parses the config values for serviceMonitor
+func ServiceMonitorConfigPointer(labels map[string]string) *ServiceMonitorConfig {
+	processValue := func(s *string) *string {
+		if s == nil {
+			return nil
+		}
+		trimmed := strings.Trim(*s, " \t")
+		if trimmed == "" {
+			return nil
+		}
+		return &trimmed
+	}
+	return &ServiceMonitorConfig{
+		Enabled:      util.GetBoolean(labels, "k8ify.prometheus.serviceMonitor"),
+		Interval:     processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.interval")),
+		Path:         processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.path")),
+		Scheme:       processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.scheme")),
+		EndpointName: processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.name")),
+	}
+}
