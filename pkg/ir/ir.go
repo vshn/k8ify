@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -257,4 +258,28 @@ func ServiceMonitorConfigPointer(labels map[string]string) *ServiceMonitorConfig
 		Scheme:       processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.scheme")),
 		EndpointName: processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.name")),
 	}
+}
+
+type ServiceMonitorBasicAuthConfig struct {
+	Username string
+	Password string
+}
+
+func ServiceMonitorBasicAuthConfigPointer(labels map[string]string) (*ServiceMonitorBasicAuthConfig, error) {
+	enabled := util.GetBoolean(labels, "k8ify.prometheus.serviceMonitor.endpoint.basicAuth")
+	if !enabled {
+		return nil, nil
+	}
+	username := util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username")
+	password := util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password")
+	if util.IsBlank(username) || util.IsBlank(password) {
+		return nil, fmt.Errorf("username or password is blank, this is not allowed. username had length %d, password had length %d",
+			len(util.OrEmptyString(username)),
+			len(util.OrEmptyString(password)))
+	}
+
+	return &ServiceMonitorBasicAuthConfig{
+		Username: *username,
+		Password: *password,
+	}, nil
 }

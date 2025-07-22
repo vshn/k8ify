@@ -1,0 +1,34 @@
+services:
+  inline:
+    image: docker.io/library/nginx
+    ports:
+      - '8080:80'
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth: "true"
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username: "inline_user"
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password: "inline_password"
+
+  vars:
+    image: docker.io/library/nginx
+    ports:
+      - '8080:80'
+    environment:
+      - FOO=${FOO}
+      - SERVICE_MONITOR_PASSWORD=${SERVICE_MONITOR_PASSWORD}
+    labels:
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth: "true"
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username: $SERVICE_MONITOR_USERNAME
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password: $SERVICE_MONITOR_PASSWORD
+
+  vars-sidecar:
+    image: docker.io/library/nginx
+    ports:
+      - '8081:80'
+    labels:
+      k8ify.partOf: vars
+      k8ify.prometheus.serviceMonitor: true
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth: "true"
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username: "inline_sidecar_user"
+      k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password: $SERVICE_MONITOR_PASSWORD_2

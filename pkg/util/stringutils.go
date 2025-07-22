@@ -92,3 +92,11 @@ func ByteArrayToAlphaNum(bytes []byte) string {
 
 	return str
 }
+
+func IsBlank(s *string) bool {
+	if s == nil {
+		return true
+	}
+	trimmed := strings.Trim(*s, " \t")
+	return trimmed == ""
+}

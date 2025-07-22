@@ -1,0 +1,8 @@
+---
+environments:
+  prod:
+    vars:
+      FOO: "one"
+      SERVICE_MONITOR_USERNAME: vars_username
+      SERVICE_MONITOR_PASSWORD: vars_password
+      SERVICE_MONITOR_PASSWORD_2: vars_password_2
