@@ -509,26 +509,33 @@ func composeServiceToServices(refSlug string, workload *ir.Service, servicePorts
 	return services
 }
 
-func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servicePorts []core.ServicePort, labels map[string]string) []ServiceMonitor {
+func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servicePorts []core.ServicePort, labels map[string]string) ([]ServiceMonitor, []core.Secret) {
 	if len(servicePorts) == 0 {
-		return []ServiceMonitor{}
+		return []ServiceMonitor{}, []core.Secret{}
 	}
-	config := util.ServiceMonitorConfigPointer(workload.Labels())
-	if !config.Enabled {
-		return []ServiceMonitor{}
+	config := ir.ServiceMonitorConfigPointer(workload.Labels())
+	if config == nil {
+		return []ServiceMonitor{}, []core.Secret{}
 	}
-	endpoints := []prometheusTypes.Endpoint{createServiceMonitorEndpoint(servicePorts, config)}
+
+	resourceName := workload.Name + refSlug
+	endpoint, secrets := createServiceMonitorEndpoint(resourceName, servicePorts, config, workload.Labels())
+	endpoints := []prometheusTypes.Endpoint{endpoint}
 	for _, part := range workload.GetParts() {
-		partConfig := util.ServiceMonitorConfigPointer(part.Labels())
-		if partConfig.Enabled {
+		partConfig := ir.ServiceMonitorConfigPointer(part.Labels())
+		if partConfig != nil {
 			partPorts := composeServicePortsToK8sServicePorts(part)
-			endpoints = append(endpoints, createServiceMonitorEndpoint(partPorts, partConfig))
+			monitorEndpoint, partSecrets := createServiceMonitorEndpoint(resourceName, partPorts, partConfig, part.Labels())
+			endpoints = append(endpoints, monitorEndpoint)
+			secrets = append(secrets, partSecrets...)
 		}
 		if len(part.GetParts()) != 0 {
 			logrus.Warnf("Detected recursive partOf structure. ServiceMonitors cannot be emitted for recursive partOf structures.")
 		}
 	}
-
+	for i := range secrets {
+		secrets[i].Labels = labels
+	}
 	return []ServiceMonitor{
 		{
 			TypeMeta: metav1.TypeMeta{
@@ -536,7 +543,7 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 				APIVersion: "monitoring.coreos.com/v1",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:   workload.Name + refSlug,
+				Name:   resourceName,
 				Labels: labels,
 			},
 			Spec: prometheusTypes.ServiceMonitorSpec{
@@ -546,16 +553,17 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 				},
 			},
 		},
-	}
+	}, secrets
 }
 
-func createServiceMonitorEndpoint(servicePorts []core.ServicePort, config *util.ServiceMonitorConfig) prometheusTypes.Endpoint {
+func createServiceMonitorEndpoint(name string, servicePorts []core.ServicePort, config *ir.ServiceMonitorConfig, labels map[string]string) (prometheusTypes.Endpoint, []core.Secret) {
 	endpoint := prometheusTypes.Endpoint{
 		Interval: "30s",
 		Port:     servicePorts[0].Name,
 		Path:     "/actuator/metrics",
 		Scheme:   "http",
 	}
+	var secrets []core.Secret
 	if config.Interval != nil {
 		endpoint.Interval = prometheusTypes.Duration(*config.Interval)
 	}
@@ -581,7 +589,39 @@ func createServiceMonitorEndpoint(servicePorts []core.ServicePort, config *util.
 			}).Warning("Port configuredPort not found, using usedPort.")
 		}
 	}
-	return endpoint
+	basicAuthConfig, err := ir.ServiceMonitorBasicAuthConfigPointer(labels)
+	if err == nil && basicAuthConfig != nil {
+		secretName := name + "-servicemonitor-" + endpoint.Port
+		secrets = append(secrets, core.Secret{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Secret",
+				APIVersion: "v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: secretName,
+			},
+			StringData: map[string]string{
+				"username": basicAuthConfig.Username,
+				"password": basicAuthConfig.Password,
+			},
+		})
+		endpoint.BasicAuth = &prometheusTypes.BasicAuth{
+			Username: core.SecretKeySelector{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: secretName,
+				},
+				Key: "username",
+			},
+			Password: core.SecretKeySelector{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: secretName,
+				},
+				Key: "password",
+			},
+		}
+	}
+
+	return endpoint, secrets
 }
 
 func composeServiceToIngress(workload *ir.Service, refSlug string, services []core.Service, labels map[string]string, targetCfg ir.TargetCfg) *networking.Ingress {
@@ -891,7 +931,9 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 
 	servicePorts := composeServicePortsToK8sServicePorts(workload)
 	objects.Services = composeServiceToServices(refSlug, workload, servicePorts, labels)
-	objects.ServiceMonitors = composeServiceToServiceMonitors(refSlug, workload, servicePorts, labels)
+	serviceMonitors, serviceMonitorSecrets := composeServiceToServiceMonitors(refSlug, workload, servicePorts, labels)
+	objects.ServiceMonitors = serviceMonitors
+	objects.Secrets = append(objects.Secrets, serviceMonitorSecrets...)
 
 	// Find volumes used by this service and all its parts
 	rwoVolumes, rwxVolumes := workload.Volumes(projectVolumes)
@@ -927,7 +969,7 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 			labels,
 		)
 		objects.StatefulSets = []apps.StatefulSet{statefulset}
-		objects.Secrets = secrets
+		objects.Secrets = append(objects.Secrets, secrets...)
 	} else {
 		deployment, secrets := composeServiceToDeployment(
 			workload,
@@ -936,7 +978,7 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 			labels,
 		)
 		objects.Deployments = []apps.Deployment{deployment}
-		objects.Secrets = secrets
+		objects.Secrets = append(objects.Secrets, secrets...)
 	}
 
 	podDisruptionBudget := composeServiceToPodDisruptionBudget(workload, refSlug, labels)

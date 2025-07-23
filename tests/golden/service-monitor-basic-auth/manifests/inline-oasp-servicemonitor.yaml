@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: inline
+  name: inline-oasp
+spec:
+  endpoints:
+  - basicAuth:
+      password:
+        key: password
+        name: inline-oasp-servicemonitor-8080
+      username:
+        key: username
+        name: inline-oasp-servicemonitor-8080
+    interval: 30s
+    path: /actuator/metrics
+    port: "8080"
+    scheme: http
+  namespaceSelector: {}
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: inline
+status: {}

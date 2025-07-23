@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -225,4 +226,52 @@ func (t TargetCfg) MaxExposeLength() int {
 		}
 	}
 	return 63
+}
+
+// ServiceMonitorConfig An intermediate struct that makes it easier to access all needed config values
+// in one place for the ServiceMonitor.
+// We did not use prometheus.ServiceMonitor directly, because then the name would be: serviceMonitor.Endpoints[0].name
+type ServiceMonitorConfig struct {
+	Interval     *string
+	Path         *string
+	Scheme       *string
+	EndpointName *string
+}
+
+// ServiceMonitorConfigPointer Parses the config values for serviceMonitor
+func ServiceMonitorConfigPointer(labels map[string]string) *ServiceMonitorConfig {
+	enabled := util.GetBoolean(labels, "k8ify.prometheus.serviceMonitor")
+	if !enabled {
+		return nil
+	}
+	return &ServiceMonitorConfig{
+		Interval:     util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.interval")),
+		Path:         util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.path")),
+		Scheme:       util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.scheme")),
+		EndpointName: util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.name")),
+	}
+}
+
+type ServiceMonitorBasicAuthConfig struct {
+	Username string
+	Password string
+}
+
+func ServiceMonitorBasicAuthConfigPointer(labels map[string]string) (*ServiceMonitorBasicAuthConfig, error) {
+	enabled := util.GetBoolean(labels, "k8ify.prometheus.serviceMonitor.endpoint.basicAuth")
+	if !enabled {
+		return nil, nil
+	}
+	username := util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username")
+	password := util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password")
+	if util.IsBlank(username) || util.IsBlank(password) {
+		return nil, fmt.Errorf("username or password is blank, this is not allowed. username had length %d, password had length %d",
+			len(util.OrEmptyString(username)),
+			len(util.OrEmptyString(password)))
+	}
+
+	return &ServiceMonitorBasicAuthConfig{
+		Username: *username,
+		Password: *password,
+	}, nil
 }

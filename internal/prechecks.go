@@ -48,6 +48,14 @@ func ComposeServicePrecheck(inputs *ir.Inputs) {
 				logrus.Warnf("Service '%s' has environment variable '%s' with value nil. There may be a problem with your compose file(s). Please use empty string \"\" values instead.", service.Name, key)
 			}
 		}
+		serviceMonitorConfig := ir.ServiceMonitorConfigPointer(service.Labels())
+		if serviceMonitorConfig != nil {
+			_, err := ir.ServiceMonitorBasicAuthConfigPointer(service.Labels())
+			if err != nil {
+				logrus.Error(err.Error())
+				os.Exit(1)
+			}
+		}
 	}
 }
 
