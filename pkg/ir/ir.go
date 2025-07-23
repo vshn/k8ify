@@ -244,21 +244,11 @@ func ServiceMonitorConfigPointer(labels map[string]string) *ServiceMonitorConfig
 	if !enabled {
 		return nil
 	}
-	processValue := func(s *string) *string {
-		if s == nil {
-			return nil
-		}
-		trimmed := strings.Trim(*s, " \t")
-		if trimmed == "" {
-			return nil
-		}
-		return &trimmed
-	}
 	return &ServiceMonitorConfig{
-		Interval:     processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.interval")),
-		Path:         processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.path")),
-		Scheme:       processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.scheme")),
-		EndpointName: processValue(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.name")),
+		Interval:     util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.interval")),
+		Path:         util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.path")),
+		Scheme:       util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.scheme")),
+		EndpointName: util.FilterBlank(util.GetOptional(labels, "k8ify.prometheus.serviceMonitor.endpoint.name")),
 	}
 }
 
