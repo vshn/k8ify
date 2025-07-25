@@ -50,9 +50,21 @@ func ComposeServicePrecheck(inputs *ir.Inputs) {
 		}
 		serviceMonitorConfig := ir.ServiceMonitorConfigPointer(service.Labels())
 		if serviceMonitorConfig != nil {
-			_, err := ir.ServiceMonitorBasicAuthConfigPointer(service.Labels())
-			if err != nil {
-				logrus.Error(err.Error())
+			_, basicAuthError := ir.ServiceMonitorBasicAuthConfigPointer(service.Labels())
+			if basicAuthError != nil {
+				logrus.Error(basicAuthError.Error())
+				os.Exit(1)
+			}
+
+			tlsConfig, tlsConfigErrors := ir.ServiceMonitorTlsConfigPointer(service.Labels())
+			if tlsConfig != nil && (serviceMonitorConfig.Scheme == nil || *serviceMonitorConfig.Scheme == `http`) {
+				logrus.Errorf("tlsConfig can not be applied for http ServiceMonitor Endpoint. service: %s", service.Name)
+				os.Exit(1)
+			}
+			if tlsConfigErrors != nil {
+				for _, err := range *tlsConfigErrors {
+					logrus.Error(err.Error())
+				}
 				os.Exit(1)
 			}
 		}

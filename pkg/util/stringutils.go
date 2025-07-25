@@ -104,6 +104,18 @@ func FilterBlank(s *string) *string {
 	return &trimmed
 }
 
+func FilterBlankBool(s *string) *bool {
+	if s == nil {
+		return nil
+	}
+	trimmed := strings.Trim(*s, " \t")
+	if trimmed == "" {
+		return nil
+	}
+	isTruthy := IsTruthy(trimmed)
+	return &isTruthy
+}
+
 func IsBlank(s *string) bool {
 	if s == nil {
 		return true

@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: basicAuth-tlsConfig
+  name: basicAuth-tlsConfig-oasp
+spec:
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: basicAuth-tlsConfig
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: basicAuth-tlsConfig
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - basicAuth-tlsConfig
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - image: docker.io/library/nginx
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
+        name: basicAuth-tlsConfig-oasp
+        ports:
+        - containerPort: 80
+        resources: {}
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
+      - image: docker.io/library/nginx
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
+        name: basicAuth-tlsConfig_sidecar-oasp
+        ports:
+        - containerPort: 80
+        resources: {}
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 80
+          timeoutSeconds: 60
+      enableServiceLinks: false
+      restartPolicy: Always
+status: {}
