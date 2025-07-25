@@ -1,7 +1,7 @@
 github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 h1:L/gRVlceqvL25UVaW/CKtUDjefjrs0SPonmDGUVOYP0=
 github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
-github.com/compose-spec/compose-go/v2 v2.8.0 h1:+xkrdBkyiiXY2gBTIhJvuKPH7zoC+jvlQBjah6Gg8+U=
-github.com/compose-spec/compose-go/v2 v2.8.0/go.mod h1:veko/VB7URrg/tKz3vmIAQDaz+CGiXH8vZsW79NmAww=
+github.com/compose-spec/compose-go/v2 v2.8.1 h1:27O4dzyhiS/UEUKp1zHOHCBWD1WbxGsYGMNNaSejTk4=
+github.com/compose-spec/compose-go/v2 v2.8.1/go.mod h1:veko/VB7URrg/tKz3vmIAQDaz+CGiXH8vZsW79NmAww=
 github.com/creack/pty v1.1.18 h1:n56/Zwd5o6whRC5PMGretI4IdRLlmBXYNjScPaBgsbY=
 github.com/creack/pty v1.1.18/go.mod h1:MOBLtS5ELjhRRrroQr9kyvTxUAFNvYEK993ew/Vr4O4=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
