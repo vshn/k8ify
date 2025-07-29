@@ -169,8 +169,8 @@ By default, the first port is used as endpoint.
 | `k8ify.prometheus.serviceMonitor.endpoint.name: 8080` | Port to use for ServiceMonitor. References the published port number. Default is the first port. |
 | [BasicAuth](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.BasicAuth) | |
 | `k8ify.prometheus.serviceMonitor.endpoint.basicAuth: true` | Enable BasicAuth for Endpoint. Default is `false` |
-| `k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username: "username"` | Username for BasicAuth for Endpoint. Default is `""`. |
-| `k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password: "password"` | Password for BasicAuth for Endpoint. Default is `""`. |
+| `k8ify.prometheus.serviceMonitor.endpoint.basicAuth.username: "username"` | Username for BasicAuth for Endpoint. |
+| `k8ify.prometheus.serviceMonitor.endpoint.basicAuth.password: "password"` | Password for BasicAuth for Endpoint. |
 | [TlsConfig](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.SafeTLSConfig) | |
 | `k8ify.prometheus.serviceMonitor.endpoint.tlsConfig: "true"` | Enable TLS configuration for the endpoint. Default is `false`. |
 | `k8ify.prometheus.serviceMonitor.endpoint.tlsConfig.ca: ${SERVICE_MONITOR_CA}` | CA certificate for TLS. |
