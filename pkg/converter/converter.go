@@ -1138,7 +1138,7 @@ type Objects struct {
 	StatefulSets           []apps.StatefulSet
 	Services               []core.Service
 	PersistentVolumeClaims []core.PersistentVolumeClaim
-	Secrets                []core.Secret
+	Secrets                []core.Secret // You don't have to create secrets for all values. A reference is also possible with _ref_ and _secretRef_.
 	ServiceMonitors        []ServiceMonitor
 	Ingresses              []networking.Ingress
 	PodDisruptionBudgets   []v1.PodDisruptionBudget
