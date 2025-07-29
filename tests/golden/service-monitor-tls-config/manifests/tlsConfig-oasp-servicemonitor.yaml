@@ -1,0 +1,36 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: tlsConfig
+  name: tlsConfig-oasp
+spec:
+  endpoints:
+  - interval: 30s
+    path: /actuator/metrics
+    port: "8080"
+    scheme: https
+    tlsConfig:
+      ca:
+        secret:
+          key: ca
+          name: tlsConfig-oasp-servicemonitor-8080
+      cert:
+        secret:
+          key: cert
+          name: tlsConfig-oasp-servicemonitor-8080
+      insecureSkipVerify: false
+      keySecret:
+        key: key
+        name: tlsConfig-oasp-servicemonitor-8080
+      maxVersion: TLS13
+      minVersion: TLS10
+      serverName: tlsconfig.svc
+  namespaceSelector: {}
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: tlsConfig
+status: {}
