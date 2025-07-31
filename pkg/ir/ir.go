@@ -1,7 +1,9 @@
 package ir
 
 import (
+	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 
@@ -47,6 +49,15 @@ func FromCompose(project *composeTypes.Project) *Inputs {
 		if ok {
 			service := NewService(composeService.Name, composeService)
 			parent.AddPart(service)
+		} else {
+			logrus.Errorf("Service %s is configured to be partOf Service %s, but Service %s already is partOf Service %s, This is not supported. Please annotate Service %s to be partOf Service %s to have all of them in one pod",
+				composeService.Name,
+				*partOf, //TODO: test if * is needed before
+				*(util.PartOf(project.Services[*partOf].Labels)), //TODO: test if this gets the correct value and make it a variable before
+				composeService.Name,
+				*(util.PartOf(project.Services[*partOf].Labels)),
+			)
+			return errors.New("") //TODO: adjust return type and handle error case where this is called
 		}
 	}
 
