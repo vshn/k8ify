@@ -49,14 +49,15 @@ func FromCompose(project *composeTypes.Project) *Inputs {
 			service := NewService(composeService.Name, composeService)
 			parent.AddPart(service)
 		} else {
+			recursivePart := *(util.PartOf(project.Services[*partOf].Labels))
 			log.Fatalf("Service %s is configured to be partOf Service %s, but Service %s already is partOf Service %s, This is not supported. Please annotate Service %s to be partOf Service %s to have all of them in one pod",
 				composeService.Name,
-				*partOf, //TODO: test if * is needed before
-				*(util.PartOf(project.Services[*partOf].Labels)), //TODO: test if this gets the correct value and make it a variable before
+				*partOf,
+				*partOf,
+				recursivePart,
 				composeService.Name,
-				*(util.PartOf(project.Services[*partOf].Labels)),
+				recursivePart,
 			)
-			//return errors.New("") //TODO: adjust return type and handle error case where this is called
 		}
 	}
 
