@@ -529,9 +529,6 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 			endpoints = append(endpoints, monitorEndpoint)
 			secrets = append(secrets, partSecrets...)
 		}
-		if len(part.GetParts()) != 0 {
-			logrus.Warnf("Detected recursive partOf structure. ServiceMonitors cannot be emitted for recursive partOf structures.")
-		}
 	}
 	for i := range secrets {
 		secrets[i].TypeMeta = metav1.TypeMeta{
