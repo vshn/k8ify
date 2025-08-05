@@ -54,7 +54,7 @@ func FromCompose(project *composeTypes.Project) *Inputs {
 
 		if partOfServiceConf, exists := project.Services[*partOf]; exists {
 			recursivePart := *(util.PartOf(partOfServiceConf.Labels))
-			logrus.Errorf("Service %s is configured to be partOf Service %s, but Service %s already is partOf Service %s, This is not supported. Please annotate Service %s to be partOf Service %s to have all of them in one pod",
+			logrus.Errorf("Service %s is configured to be partOf Service %s, but Service %s already is partOf Service %s. This is not supported. Please annotate Service %s to be partOf Service %s to have all of them in one pod.",
 				composeService.Name,
 				*partOf,
 				*partOf,
