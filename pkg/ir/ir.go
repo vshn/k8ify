@@ -2,6 +2,8 @@ package ir
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"os"
 	"strconv"
 	"strings"
 
@@ -47,6 +49,27 @@ func FromCompose(project *composeTypes.Project) *Inputs {
 		if ok {
 			service := NewService(composeService.Name, composeService)
 			parent.AddPart(service)
+			continue
+		}
+
+		if partOfServiceConf, exists := project.Services[*partOf]; exists {
+			recursivePart := *(util.PartOf(partOfServiceConf.Labels))
+			logrus.Errorf("Service %s is configured to be partOf Service %s, but Service %s already is partOf Service %s. This is not supported. Please annotate Service %s to be partOf Service %s to have all of them in one pod.",
+				composeService.Name,
+				*partOf,
+				*partOf,
+				recursivePart,
+				composeService.Name,
+				recursivePart,
+			)
+			os.Exit(1)
+		} else {
+			logrus.Errorf("Service %s is configured to be partOf Service %s. However, the Service %s does not exists. Check for typos or missing configuration.",
+				composeService.Name,
+				*partOf,
+				*partOf,
+			)
+			os.Exit(1)
 		}
 	}
 

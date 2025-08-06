@@ -30,13 +30,6 @@ services:
     labels:
       k8ify.partOf: website-with-sidecar
       k8ify.prometheus.serviceMonitor: true
-  sidecar-of-sidecar:
-    image: docker.io/library/nginx
-    ports:
-      - '8085:80'
-    labels:
-      k8ify.partOf: sidecar
-      k8ify.prometheus.serviceMonitor: true
   website-with-empty-string-values:
     image: docker.io/library/nginx
     ports:
