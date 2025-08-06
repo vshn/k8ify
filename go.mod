@@ -8,7 +8,7 @@ require (
 	github.com/compose-spec/compose-go/v2 v2.8.1
 	github.com/docker/go-units v0.5.0
 	github.com/joho/godotenv v1.5.1
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.84.0
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.84.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.7
 	github.com/stretchr/testify v1.10.0
