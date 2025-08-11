@@ -97,13 +97,17 @@ func composeServiceTmpfsToK8s(
 	return volumes, volumeMounts
 }
 
-func composeServicePortsToK8sServicePorts(workload *ir.Service) []core.ServicePort {
-	servicePorts := []core.ServicePort{}
+func composeServicePortsToK8sServicePorts(workload *ir.ParentService) []core.ServicePort {
 	ports := workload.GetPorts()
 	// the single k8s service contains the ports of all parts
 	for _, part := range workload.GetParts() {
 		ports = append(ports, part.GetPorts()...)
 	}
+	return createServicePorts(ports)
+}
+
+func createServicePorts(ports []ir.PublishedPort) []core.ServicePort {
+	var servicePorts []core.ServicePort
 	for _, port := range ports {
 		servicePorts = append(servicePorts, core.ServicePort{
 			Name: fmt.Sprint(port.ServicePort),
@@ -170,12 +174,7 @@ func composeServiceToPullSecret(authConf string, name string, labels map[string]
 	return &secret
 }
 
-func composeServiceToDeployment(
-	workload *ir.Service,
-	refSlug string,
-	projectVolumes map[string]*ir.Volume,
-	labels map[string]string,
-) (apps.Deployment, []core.Secret) {
+func composeServiceToDeployment(workload *ir.ParentService, refSlug string, projectVolumes map[string]*ir.Volume, labels map[string]string) (apps.Deployment, []core.Secret) {
 
 	deployment := apps.Deployment{}
 	deployment.APIVersion = "apps/v1"
@@ -227,13 +226,7 @@ func getUpdateOrder(composeService composeTypes.ServiceConfig) string {
 	return composeService.Deploy.UpdateConfig.Order
 }
 
-func composeServiceToStatefulSet(
-	workload *ir.Service,
-	refSlug string,
-	projectVolumes map[string]*ir.Volume,
-	volumeClaims []core.PersistentVolumeClaim,
-	labels map[string]string,
-) (apps.StatefulSet, []core.Secret) {
+func composeServiceToStatefulSet(workload *ir.ParentService, refSlug string, projectVolumes map[string]*ir.Volume, volumeClaims []core.PersistentVolumeClaim, labels map[string]string) (apps.StatefulSet, []core.Secret) {
 	statefulset := apps.StatefulSet{}
 	statefulset.APIVersion = "apps/v1"
 	statefulset.Kind = "StatefulSet"
@@ -273,7 +266,7 @@ func composeServiceToReplicas(composeService composeTypes.ServiceConfig) *int32 
 }
 
 func composeServiceToPodTemplate(
-	workload *ir.Service,
+	workload *ir.ParentService,
 	refSlug string,
 	projectVolumes map[string]*ir.Volume,
 	labels map[string]string,
@@ -295,7 +288,8 @@ func composeServiceToPodTemplate(
 		imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name})
 	}
 	for _, part := range workload.GetParts() {
-		c, s, cvs := composeServiceToContainer(part, refSlug, projectVolumes, labels)
+		fakeParent := ir.ParentService{Service: *part}
+		c, s, cvs := composeServiceToContainer(&fakeParent, refSlug, projectVolumes, labels)
 		containers = append(containers, c)
 		if s != nil {
 			secrets = append(secrets, *s)
@@ -332,7 +326,7 @@ func composeServiceToPodTemplate(
 		RestartPolicy:      core.RestartPolicyAlways,
 		Volumes:            volumesArray,
 		ServiceAccountName: serviceAccountName,
-		Affinity:           composeServiceToAffinity(workload),
+		Affinity:           composeServiceToAffinity(&workload.Service),
 	}
 
 	return core.PodTemplateSpec{
@@ -368,7 +362,7 @@ func composeServiceToAffinity(workload *ir.Service) *core.Affinity {
 }
 
 func composeServiceToContainer(
-	workload *ir.Service,
+	workload *ir.ParentService,
 	refSlug string,
 	projectVolumes map[string]*ir.Volume,
 	labels map[string]string,
@@ -384,11 +378,11 @@ func composeServiceToContainer(
 	}
 	volumeMounts = append(volumeMounts, emptyDirVolumeMounts...)
 
-	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(workload)
-	lifecycle := composeServiceToLifecycle(workload)
-	containerPorts := composeServicePortsToK8sContainerPorts(workload)
+	livenessProbe, readinessProbe, startupProbe := composeServiceToProbes(&workload.Service)
+	lifecycle := composeServiceToLifecycle(&workload.Service)
+	containerPorts := composeServicePortsToK8sContainerPorts(&workload.Service)
 	resources := composeServiceToResourceRequirements(composeService)
-	secret := composeServiceToSecret(workload, refSlug, labels)
+	secret := composeServiceToSecret(&workload.Service, refSlug, labels)
 	envFrom := []core.EnvFromSource{}
 	if secret != nil {
 		envFrom = append(envFrom, core.EnvFromSource{SecretRef: &core.SecretEnvSource{LocalObjectReference: core.LocalObjectReference{Name: secret.Name}}})
@@ -509,7 +503,7 @@ func composeServiceToServices(refSlug string, workload *ir.Service, servicePorts
 	return services
 }
 
-func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servicePorts []core.ServicePort, labels map[string]string) ([]ServiceMonitor, []core.Secret) {
+func composeServiceToServiceMonitors(refSlug string, workload *ir.ParentService, servicePorts []core.ServicePort, labels map[string]string) ([]ServiceMonitor, []core.Secret) {
 	if len(servicePorts) == 0 {
 		return []ServiceMonitor{}, []core.Secret{}
 	}
@@ -524,7 +518,7 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.Service, servi
 	for _, part := range workload.GetParts() {
 		partConfig := ir.ServiceMonitorConfigPointer(part.Labels())
 		if partConfig != nil {
-			partPorts := composeServicePortsToK8sServicePorts(part)
+			partPorts := createServicePorts(part.GetPorts())
 			monitorEndpoint, partSecrets := createServiceMonitorEndpoint(resourceName, partPorts, partConfig, part.Labels())
 			endpoints = append(endpoints, monitorEndpoint)
 			secrets = append(secrets, partSecrets...)
@@ -684,7 +678,7 @@ func secretKeySelector(secretName string, secretKey string) core.SecretKeySelect
 	}
 }
 
-func composeServiceToIngress(workload *ir.Service, refSlug string, services []core.Service, labels map[string]string, targetCfg ir.TargetCfg) *networking.Ingress {
+func composeServiceToIngress(workload *ir.ParentService, refSlug string, services []core.Service, labels map[string]string, targetCfg ir.TargetCfg) *networking.Ingress {
 	var service *core.Service
 	for _, s := range services {
 		if serviceSpecIsUnexposedDefault(s.Spec) {
@@ -695,7 +689,7 @@ func composeServiceToIngress(workload *ir.Service, refSlug string, services []co
 		return nil
 	}
 
-	workloads := []*ir.Service{workload}
+	workloads := []*ir.Service{&workload.Service}
 	workloads = append(workloads, workload.GetParts()...)
 
 	var ingressRules []networking.IngressRule
@@ -954,7 +948,7 @@ func CallExternalConverter(resourceName string, options map[string]string) (unst
 	return otherResource, nil
 }
 
-func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[string]*ir.Volume, targetCfg ir.TargetCfg) Objects {
+func ComposeServiceToK8s(ref string, workload *ir.ParentService, projectVolumes map[string]*ir.Volume, targetCfg ir.TargetCfg) Objects {
 	refSlug := toRefSlug(util.SanitizeWithMinLength(ref, 4), workload)
 	labels := make(map[string]string)
 	labels["k8ify.service"] = workload.Name
@@ -990,7 +984,7 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 	}
 
 	servicePorts := composeServicePortsToK8sServicePorts(workload)
-	objects.Services = composeServiceToServices(refSlug, workload, servicePorts, labels)
+	objects.Services = composeServiceToServices(refSlug, &workload.Service, servicePorts, labels)
 	serviceMonitors, serviceMonitorSecrets := composeServiceToServiceMonitors(refSlug, workload, servicePorts, labels)
 	objects.ServiceMonitors = serviceMonitors
 	objects.Secrets = append(objects.Secrets, serviceMonitorSecrets...)
@@ -1041,7 +1035,7 @@ func ComposeServiceToK8s(ref string, workload *ir.Service, projectVolumes map[st
 		objects.Secrets = append(objects.Secrets, secrets...)
 	}
 
-	podDisruptionBudget := composeServiceToPodDisruptionBudget(workload, refSlug, labels)
+	podDisruptionBudget := composeServiceToPodDisruptionBudget(&workload.Service, refSlug, labels)
 	if podDisruptionBudget == nil {
 		objects.PodDisruptionBudgets = []v1.PodDisruptionBudget{}
 	} else {
