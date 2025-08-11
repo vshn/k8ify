@@ -2,10 +2,11 @@ package ir
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	composeTypes "github.com/compose-spec/compose-go/v2/types"
 	prometheusTypes "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"

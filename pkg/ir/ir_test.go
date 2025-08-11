@@ -2,10 +2,11 @@ package ir
 
 import (
 	"errors"
+	"testing"
+
 	prometheusTypes "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	assertions "github.com/stretchr/testify/assert"
 	"github.com/vshn/k8ify/pkg/util"
-	"testing"
 )
 
 func TestServiceMonitorConfig(t *testing.T) {

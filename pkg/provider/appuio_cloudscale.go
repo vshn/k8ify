@@ -2,8 +2,9 @@ package provider
 
 import (
 	"fmt"
-	"github.com/vshn/k8ify/pkg/ir"
 	"strings"
+
+	"github.com/vshn/k8ify/pkg/ir"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vshn/k8ify/internal"

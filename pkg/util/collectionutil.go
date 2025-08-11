@@ -1,8 +1,9 @@
 package util
 
 import (
-	"github.com/sirupsen/logrus"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 func AppendMap[KEY comparable, VALUE any](first map[KEY]VALUE, second map[KEY]VALUE) map[KEY]VALUE {
