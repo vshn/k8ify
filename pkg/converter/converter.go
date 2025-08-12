@@ -2,14 +2,15 @@ package converter
 
 import (
 	"fmt"
-	prometheusTypes "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"maps"
 	"os"
 	"os/exec"
 	"sort"
 	"strings"
+
+	prometheusTypes "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	composeTypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/sirupsen/logrus"
