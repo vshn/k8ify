@@ -15,14 +15,14 @@ import (
 )
 
 type Inputs struct {
-	Services  map[string]*Service
+	Services  map[string]*ParentService
 	Volumes   map[string]*Volume
 	TargetCfg TargetCfg
 }
 
 func NewInputs() *Inputs {
 	return &Inputs{
-		Services: make(map[string]*Service),
+		Services: make(map[string]*ParentService),
 		Volumes:  make(map[string]*Volume),
 	}
 }
@@ -48,7 +48,7 @@ func FromCompose(project *composeTypes.Project) *Inputs {
 		}
 		parent, ok := inputs.Services[*partOf]
 		if ok {
-			service := NewService(composeService.Name, composeService)
+			service := &Service{Name: composeService.Name, raw: composeService}
 			parent.AddPart(service)
 			continue
 		}
@@ -90,18 +90,22 @@ func FromCompose(project *composeTypes.Project) *Inputs {
 	return inputs
 }
 
-// Service provides some k8ify-specific abstractions & utility around Compose
+// ParentService provides some k8ify-specific abstractions & utility around Compose
 // service configurations.
-type Service struct {
-	Name string
-
-	raw composeTypes.ServiceConfig
+type ParentService struct {
+	Service
 
 	parts []*Service
 }
 
-func NewService(name string, composeService composeTypes.ServiceConfig) *Service {
-	return &Service{Name: name, raw: composeService, parts: make([]*Service, 0)}
+type Service struct {
+	Name string
+
+	raw composeTypes.ServiceConfig
+}
+
+func NewService(name string, composeService composeTypes.ServiceConfig) *ParentService {
+	return &ParentService{Service: Service{Name: name, raw: composeService}, parts: make([]*Service, 0)}
 }
 
 // AsCompose returns the underlying compose config
@@ -110,11 +114,11 @@ func (s *Service) AsCompose() composeTypes.ServiceConfig {
 	return s.raw
 }
 
-func (s *Service) AddPart(part *Service) {
+func (s *ParentService) AddPart(part *Service) {
 	s.parts = append(s.parts, part)
 }
 
-func (s *Service) GetParts() []*Service {
+func (s *ParentService) GetParts() []*Service {
 	return s.parts
 }
 
