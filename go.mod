@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.6
 
 require (
-	github.com/compose-spec/compose-go/v2 v2.8.1
+	github.com/compose-spec/compose-go/v2 v2.8.2
 	github.com/docker/go-units v0.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.84.1
@@ -27,7 +27,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
-	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
