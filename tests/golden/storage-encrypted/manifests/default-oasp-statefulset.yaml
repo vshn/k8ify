@@ -1,7 +1,6 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  creationTimestamp: null
   labels:
     k8ify.ref-slug: oasp
     k8ify.service: default
@@ -14,7 +13,6 @@ spec:
   serviceName: default-oasp
   template:
     metadata:
-      creationTimestamp: null
       labels:
         k8ify.ref-slug: oasp
         k8ify.service: default
@@ -44,7 +42,6 @@ spec:
   - apiVersion: v1
     kind: PersistentVolumeClaim
     metadata:
-      creationTimestamp: null
       labels:
         k8ify.ref-slug: oasp
         k8ify.service: default

@@ -4,7 +4,6 @@ metadata:
   annotations:
     helloWorld: Hello World!
     k8up.io/file-extension: defaultvalue
-  creationTimestamp: null
   labels:
     k8ify.service: mongo
   name: mongo
