@@ -1,7 +1,6 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  creationTimestamp: null
   labels:
     k8ify.ref-slug: oasp
     k8ify.service: nginx-frontend
