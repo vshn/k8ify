@@ -34,4 +34,3 @@ spec:
     matchLabels:
       k8ify.ref-slug: oasp
       k8ify.service: vars
-status: {}

@@ -16,4 +16,3 @@ spec:
     matchLabels:
       k8ify.ref-slug: oasp
       k8ify.service: website-with-multiple-ports-with-names
-status: {}

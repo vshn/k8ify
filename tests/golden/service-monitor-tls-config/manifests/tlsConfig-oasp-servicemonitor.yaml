@@ -32,4 +32,3 @@ spec:
     matchLabels:
       k8ify.ref-slug: oasp
       k8ify.service: tlsConfig
-status: {}
