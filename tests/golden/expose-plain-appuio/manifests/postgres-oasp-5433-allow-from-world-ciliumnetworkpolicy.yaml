@@ -1,0 +1,19 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: postgres
+  name: postgres-oasp-5433-allow-from-world
+spec:
+  endpointSelector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: postgres
+  ingress:
+  - fromEntities:
+    - world
+    toPorts:
+    - ports:
+      - port: "5433"
+        protocol: ANY
