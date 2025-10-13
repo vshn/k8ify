@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: postgres
+  name: postgres-oasp
+spec:
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: postgres
+  serviceName: postgres-oasp
+  template:
+    metadata:
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: postgres
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - postgres
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - envFrom:
+        - secretRef:
+            name: postgres-oasp-env
+        image: docker.io/library/postgres
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          tcpSocket:
+            port: 5432
+          timeoutSeconds: 60
+        name: postgres-oasp
+        ports:
+        - containerPort: 5432
+        - containerPort: 5432
+        - containerPort: 5432
+        resources: {}
+        startupProbe:
+          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 5432
+          timeoutSeconds: 60
+        volumeMounts:
+        - mountPath: /var/lib/postgresql
+          name: postgres-data
+      enableServiceLinks: false
+      restartPolicy: Always
+  updateStrategy: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: postgres
+      name: postgres-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+    status: {}
+status:
+  availableReplicas: 0
+  replicas: 0

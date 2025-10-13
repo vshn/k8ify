@@ -15,6 +15,7 @@ import (
 	composeTypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/sirupsen/logrus"
 	"github.com/vshn/k8ify/pkg/ir"
+	"github.com/vshn/k8ify/pkg/provider/networkpolicy"
 	"github.com/vshn/k8ify/pkg/util"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -986,6 +987,7 @@ func ComposeServiceToK8s(ref string, workload *ir.ParentService, projectVolumes 
 
 	servicePorts := composeServicePortsToK8sServicePorts(workload)
 	objects.Services = composeServiceToServices(refSlug, &workload.Service, servicePorts, labels)
+	objects.CiliumNetworkPolicies = append(objects.CiliumNetworkPolicies, networkpolicy.CreateNetworkPoliciesForExposedPorts(targetCfg, refSlug, workload, labels, servicePorts)...)
 	serviceMonitors, serviceMonitorSecrets := composeServiceToServiceMonitors(refSlug, workload, servicePorts, labels)
 	objects.ServiceMonitors = serviceMonitors
 	objects.Secrets = append(objects.Secrets, serviceMonitorSecrets...)
@@ -1126,6 +1128,7 @@ func (s ServiceMonitor) DeepCopyObject() runtime.Object {
 // Objects combines all possible resources the conversion process could produce
 type Objects struct {
 	// Deployments
+	CiliumNetworkPolicies  []unstructured.Unstructured
 	Deployments            []apps.Deployment
 	StatefulSets           []apps.StatefulSet
 	Services               []core.Service
@@ -1152,6 +1155,7 @@ func (o Objects) Append(other Objects) Objects {
 	}
 
 	return Objects{
+		CiliumNetworkPolicies:  append(o.CiliumNetworkPolicies, other.CiliumNetworkPolicies...),
 		Deployments:            append(o.Deployments, other.Deployments...),
 		StatefulSets:           append(o.StatefulSets, other.StatefulSets...),
 		Services:               append(o.Services, other.Services...),

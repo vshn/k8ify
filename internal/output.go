@@ -56,6 +56,14 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 		os.Exit(1)
 	}
 
+	for _, ciliumNetworkPolicy := range objects.CiliumNetworkPolicies {
+		name := ciliumNetworkPolicy.GetName()
+		err := writeManifest(&ciliumNetworkPolicy, outputDir+"/"+name+"-ciliumnetworkpolicy.yaml")
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, deployment := range objects.Deployments {
 		err := writeManifest(&deployment, outputDir+"/"+deployment.Name+"-deployment.yaml")
 		if err != nil {

@@ -1,0 +1,24 @@
+services:
+  postgres:
+    labels:
+      k8ify.exposePlain.5432: true
+      k8ify.exposePlain.5432.externalTrafficPolicy: Cluster
+      k8ify.exposePlain.5433: true
+      k8ify.exposePlain.5433.externalTrafficPolicy: Cluster
+    image: docker.io/library/postgres
+    environment:
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    ports:
+      - '5432:5432'
+      # second port to test multiple ports
+      - '5433:5432'
+      # not exposed port
+      - '5434:5432'
+
+volumes:
+  postgres_data:
+
+x-targetCfg:
+  exposePlainLoadBalancerScheme: appuio-cloudscale
