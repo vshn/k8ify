@@ -2,7 +2,7 @@ module github.com/vshn/k8ify
 
 go 1.25.0
 
-toolchain go1.25.5
+toolchain go1.25.6
 
 require (
 	github.com/compose-spec/compose-go/v2 v2.10.0
