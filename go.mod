@@ -5,7 +5,7 @@ go 1.25.0
 toolchain go1.25.6
 
 require (
-	github.com/compose-spec/compose-go/v2 v2.10.0
+	github.com/compose-spec/compose-go/v2 v2.10.1
 	github.com/docker/go-units v0.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.86.2
