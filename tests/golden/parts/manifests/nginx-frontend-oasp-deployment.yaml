@@ -15,6 +15,8 @@ spec:
     type: Recreate
   template:
     metadata:
+      annotations:
+        k8ify.restart-trigger-config: "1834128951"
       labels:
         k8ify.ref-slug: oasp
         k8ify.service: nginx-frontend

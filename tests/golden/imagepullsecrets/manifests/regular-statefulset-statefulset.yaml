@@ -11,6 +11,8 @@ spec:
   serviceName: regular-statefulset
   template:
     metadata:
+      annotations:
+        k8ify.restart-trigger-config: "2142075766"
       labels:
         k8ify.service: regular-statefulset
     spec:

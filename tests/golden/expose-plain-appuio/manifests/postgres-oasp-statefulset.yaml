@@ -13,6 +13,8 @@ spec:
   serviceName: postgres-oasp
   template:
     metadata:
+      annotations:
+        k8ify.restart-trigger-config: "1924801714"
       labels:
         k8ify.ref-slug: oasp
         k8ify.service: postgres
