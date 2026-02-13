@@ -1,13 +1,21 @@
 package converter
 
 import (
+	"bytes"
+	"cmp"
+	"crypto/sha256"
 	"fmt"
-	"hash/fnv"
-	"sort"
+	"hash"
+	"maps"
+	"slices"
 	"strings"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+)
+
+var (
+	emptyHash = sha256.New().Sum(nil)
 )
 
 func addAnnotations(annotations *map[string]string, addAnnotations map[string]string) {
@@ -46,34 +54,26 @@ func getSecretByName(secrets []core.Secret, name string) (*core.Secret, error) {
 	return nil, fmt.Errorf("secret %q not found", name)
 }
 
-// As environments could potentionally be very long we concatenate everything and hash at the end
 // We sort beforehand to not depend on the order of key-value entries
-func hashSecret(secret *core.Secret) uint32 {
-	sortedKeys := make([]string, 0, len(secret.StringData))
-	for k := range secret.StringData {
-		sortedKeys = append(sortedKeys, k)
-	}
-	sort.Strings(sortedKeys)
+func hashSecret(secret *core.Secret, hash hash.Hash) {
+	sortedKeys := slices.Collect(maps.Keys(secret.StringData))
+	slices.Sort(sortedKeys)
 
-	// Concatenate all key-value pairs
-	hashInput := []byte{}
 	for _, k := range sortedKeys {
-		hashInput = append(hashInput, []byte(k)...)
-		hashInput = append(hashInput, secret.Data[k]...)
+		hash.Write([]byte(k))
+		hash.Write([]byte(secret.StringData[k]))
 	}
-
-	hash := fnv.New32a()
-	hash.Write([]byte(hashInput))
-	return hash.Sum32()
 }
 
-// We use XOR to not depend on the order of the secrets and not cause an overflow
-func hashSecrets(secrets []*core.Secret) uint32 {
-	var hash uint32 = 0
-	for _, secret := range secrets {
-		hash = hash ^ hashSecret(secret)
+func hashSecrets(secrets []*core.Secret, hash hash.Hash) {
+	sortedSecrets := slices.Clone(secrets)
+	slices.SortFunc(sortedSecrets, func(a, b *core.Secret) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+
+	for _, secret := range sortedSecrets {
+		hashSecret(secret, hash)
 	}
-	return hash
 }
 
 func patchPodTemplate(template *core.PodTemplateSpec, secrets []core.Secret, modifiedImages []string, forceRestartAnnotation map[string]string) {
@@ -113,10 +113,13 @@ func patchPodTemplate(template *core.PodTemplateSpec, secrets []core.Secret, mod
 			matchingSecrets = append(matchingSecrets, secret)
 		}
 	}
-	hash := hashSecrets(matchingSecrets)
-	if hash != 0 {
+
+	hash := sha256.New()
+	hashSecrets(matchingSecrets, hash)
+	hashSum := hash.Sum(nil)
+	if !bytes.Equal(hashSum, emptyHash) {
 		addAnnotations(&template.Annotations, map[string]string{
-			"k8ify.restart-trigger-config": fmt.Sprint(hash),
+			"k8ify.restart-trigger-config": fmt.Sprintf("%x", hashSum),
 		})
 	}
 	if modified {

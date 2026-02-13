@@ -16,7 +16,7 @@ spec:
   template:
     metadata:
       annotations:
-        k8ify.restart-trigger-config: "1834128951"
+        k8ify.restart-trigger-config: 11992f9697876bc536c20ada965705ac01ae47ed9b8c50a58f794888810a716c
       labels:
         k8ify.ref-slug: oasp
         k8ify.service: nginx-frontend

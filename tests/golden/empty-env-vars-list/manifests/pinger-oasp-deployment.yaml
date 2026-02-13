@@ -15,7 +15,7 @@ spec:
   template:
     metadata:
       annotations:
-        k8ify.restart-trigger-config: "1391026752"
+        k8ify.restart-trigger-config: 95300a9d257b12345314d476d2d9c827c98bfb04f5a1f215fc09d901ed67f57c
       labels:
         k8ify.ref-slug: oasp
         k8ify.service: pinger

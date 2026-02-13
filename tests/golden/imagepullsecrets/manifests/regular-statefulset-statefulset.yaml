@@ -12,7 +12,7 @@ spec:
   template:
     metadata:
       annotations:
-        k8ify.restart-trigger-config: "1015133671"
+        k8ify.restart-trigger-config: 406e94d0ef2292cd32106232725afef9cb753b1d0505dd154606c3ef9a36298b
       labels:
         k8ify.service: regular-statefulset
     spec:
