@@ -104,6 +104,15 @@ func patchPodTemplate(template *core.PodTemplateSpec, secrets []core.Secret, mod
 			modified = true
 		}
 	}
+	if template.Spec.ImagePullSecrets != nil {
+		for _, auth := range template.Spec.ImagePullSecrets {
+			secret, err := getSecretByName(secrets, auth.Name)
+			if err != nil {
+				continue
+			}
+			matchingSecrets = append(matchingSecrets, secret)
+		}
+	}
 	hash := hashSecrets(matchingSecrets)
 	if hash != 0 {
 		addAnnotations(&template.Annotations, map[string]string{
