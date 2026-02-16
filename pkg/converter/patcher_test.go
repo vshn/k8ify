@@ -56,3 +56,17 @@ func TestHashSecrets_UsingSameSecretTwiceChangesHash(t *testing.T) {
 		t.Fatal("multiple uses of the same secret should change the hash")
 	}
 }
+
+func TestHashSecrets_UsingSameSecretTwiceIsNotEmptyString(t *testing.T) {
+	secretA := createSecret("A", map[string]string{
+		"a": "1",
+		"b": "2",
+	})
+
+	hash1 := sha256.New()
+	hashSecrets([]*core.Secret{secretA, secretA}, hash1)
+	hash2 := sha256.New()
+	if bytes.Equal(hash1.Sum(nil), hash2.Sum(nil)) {
+		t.Fatal("if the same secret is used twice, it should not result in a hash of an empty string")
+	}
+}
