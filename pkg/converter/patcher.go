@@ -56,19 +56,19 @@ func getSecretByName(secrets []core.Secret, name string) (*core.Secret, error) {
 }
 
 // We sort beforehand to not depend on the order of key-value entries
-func hashSecret(secret *core.Secret, hash hash.Hash) {
+func hashSecret(secret *core.Secret, hasher hash.Hash) {
 	sortedKeys := slices.Collect(maps.Keys(secret.StringData))
 	slices.Sort(sortedKeys)
 
 	for _, k := range sortedKeys {
-		hash.Write([]byte(k))
-		hash.Write([]byte(secret.StringData[k]))
+		hasher.Write([]byte(k))
+		hasher.Write([]byte(secret.StringData[k]))
 	}
 }
 
-func hashSecrets(secrets []*core.Secret, hash hash.Hash) {
+func hashSecrets(secrets []*core.Secret, hasher hash.Hash) {
 	for _, secret := range secrets {
-		hashSecret(secret, hash)
+		hashSecret(secret, hasher)
 	}
 }
 
@@ -113,9 +113,9 @@ func patchPodTemplate(template *core.PodTemplateSpec, secrets []core.Secret, mod
 		}
 	}
 
-	hash := sha256.New()
-	hashSecrets(matchingSecrets, hash)
-	hashSum := hash.Sum(nil)
+	hasher := sha256.New()
+	hashSecrets(matchingSecrets, hasher)
+	hashSum := hasher.Sum(nil)
 	if !bytes.Equal(hashSum, emptyHash) {
 		addAnnotations(&template.Annotations, map[string]string{
 			"k8ify.restart-trigger-config": fmt.Sprintf("%x", hashSum),
