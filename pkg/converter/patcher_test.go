@@ -1,9 +1,10 @@
 package converter
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"testing"
+
+	assertions "github.com/stretchr/testify/assert"
 
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,6 +20,7 @@ func createSecret(name string, data map[string]string) *core.Secret {
 }
 
 func TestHashSecrets_DifferentContentProducesDifferentHash(t *testing.T) {
+	assert := assertions.New(t)
 	secretA := createSecret("A", map[string]string{
 		"a": "1",
 		"b": "2",
@@ -35,12 +37,11 @@ func TestHashSecrets_DifferentContentProducesDifferentHash(t *testing.T) {
 	hash2 := sha256.New()
 	hashSecrets([]*core.Secret{secretB}, hash2)
 
-	if bytes.Equal(hash1.Sum(nil), hash2.Sum(nil)) {
-		t.Fatal("different secret contents should produce different hashes")
-	}
+	assert.NotEqual(hash1.Sum(nil), hash2.Sum(nil), "different secret contents should produce different hashes")
 }
 
 func TestHashSecrets_UsingSameSecretTwiceChangesHash(t *testing.T) {
+	assert := assertions.New(t)
 	secretA := createSecret("A", map[string]string{
 		"a": "1",
 		"b": "2",
@@ -52,12 +53,11 @@ func TestHashSecrets_UsingSameSecretTwiceChangesHash(t *testing.T) {
 	hash2 := sha256.New()
 	hashSecrets([]*core.Secret{secretA, secretA}, hash2)
 
-	if bytes.Equal(hash1.Sum(nil), hash2.Sum(nil)) {
-		t.Fatal("multiple uses of the same secret should change the hash")
-	}
+	assert.NotEqual(hash1.Sum(nil), hash2.Sum(nil), "multiple uses of the same secret should change the hash")
 }
 
 func TestHashSecrets_UsingSameSecretTwiceIsNotEmptyString(t *testing.T) {
+	assert := assertions.New(t)
 	secretA := createSecret("A", map[string]string{
 		"a": "1",
 		"b": "2",
@@ -66,7 +66,5 @@ func TestHashSecrets_UsingSameSecretTwiceIsNotEmptyString(t *testing.T) {
 	hash1 := sha256.New()
 	hashSecrets([]*core.Secret{secretA, secretA}, hash1)
 	hash2 := sha256.New()
-	if bytes.Equal(hash1.Sum(nil), hash2.Sum(nil)) {
-		t.Fatal("if the same secret is used twice, it should not result in a hash of an empty string")
-	}
+	assert.NotEqual(hash1.Sum(nil), hash2.Sum(nil), "if the same secret is used twice, it should not result in a hash of an empty string")
 }
