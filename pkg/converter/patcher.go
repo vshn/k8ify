@@ -2,7 +2,6 @@ package converter
 
 import (
 	"bytes"
-	"cmp"
 	"crypto/sha256"
 	"fmt"
 	"hash"
@@ -68,12 +67,7 @@ func hashSecret(secret *core.Secret, hash hash.Hash) {
 }
 
 func hashSecrets(secrets []*core.Secret, hash hash.Hash) {
-	sortedSecrets := slices.Clone(secrets)
-	slices.SortFunc(sortedSecrets, func(a, b *core.Secret) int {
-		return cmp.Compare(a.Name, b.Name)
-	})
-
-	for _, secret := range sortedSecrets {
+	for _, secret := range secrets {
 		hashSecret(secret, hash)
 	}
 }

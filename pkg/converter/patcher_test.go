@@ -40,28 +40,6 @@ func TestHashSecrets_DifferentContentProducesDifferentHash(t *testing.T) {
 	}
 }
 
-func TestHashSecrets_OrderDoesNotMatter(t *testing.T) {
-	secretA := createSecret("A", map[string]string{
-		"a": "1",
-		"b": "2",
-	})
-
-	secretB := createSecret("B", map[string]string{
-		"c": "3",
-		"d": "4",
-	})
-
-	hash1 := sha256.New()
-	hashSecrets([]*core.Secret{secretA, secretB}, hash1)
-
-	hash2 := sha256.New()
-	hashSecrets([]*core.Secret{secretB, secretA}, hash2)
-
-	if !bytes.Equal(hash1.Sum(nil), hash2.Sum(nil)) {
-		t.Fatal("hashSecrets should produce identical hash regardless of slice order")
-	}
-}
-
 func TestHashSecrets_UsingSameSecretTwiceChangesHash(t *testing.T) {
 	secretA := createSecret("A", map[string]string{
 		"a": "1",
