@@ -10,6 +10,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 )
@@ -86,6 +88,7 @@ func patchPodTemplate(template *core.PodTemplateSpec, secrets []core.Secret, mod
 			}
 			secret, err := getSecretByName(secrets, env.SecretRef.Name)
 			if err != nil {
+				logrus.Infof("Container %q: %s", container.Name, err.Error())
 				continue
 			}
 			matchingSecrets = append(matchingSecrets, secret)
@@ -96,6 +99,7 @@ func patchPodTemplate(template *core.PodTemplateSpec, secrets []core.Secret, mod
 			}
 			secret, err := getSecretByName(secrets, env.ValueFrom.SecretKeyRef.Name)
 			if err != nil {
+				logrus.Infof("Container %q: %s", container.Name, err.Error())
 				continue
 			}
 			matchingSecrets = append(matchingSecrets, secret)
@@ -108,6 +112,7 @@ func patchPodTemplate(template *core.PodTemplateSpec, secrets []core.Secret, mod
 		for _, auth := range template.Spec.ImagePullSecrets {
 			secret, err := getSecretByName(secrets, auth.Name)
 			if err != nil {
+				logrus.Infof("ImagePullSecret: %s", err.Error())
 				continue
 			}
 			matchingSecrets = append(matchingSecrets, secret)
