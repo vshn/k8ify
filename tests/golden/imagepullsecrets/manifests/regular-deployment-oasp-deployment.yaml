@@ -14,6 +14,8 @@ spec:
     type: Recreate
   template:
     metadata:
+      annotations:
+        k8ify.restart-trigger-config: f879b700a89a284cde41ef0e63d62565a07484341abf43f819216f3717bee4bc
       labels:
         k8ify.ref-slug: oasp
         k8ify.service: regular-deployment

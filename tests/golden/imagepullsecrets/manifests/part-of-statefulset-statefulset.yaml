@@ -11,6 +11,8 @@ spec:
   serviceName: part-of-statefulset
   template:
     metadata:
+      annotations:
+        k8ify.restart-trigger-config: 052534b4a76bbaf12107a6fe8a4541027878feb7696a0cc829f139249e681442
       labels:
         k8ify.service: part-of-statefulset
     spec:

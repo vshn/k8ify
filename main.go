@@ -115,8 +115,8 @@ func Main(args []string) int {
 
 	forceRestartAnnotation := make(map[string]string)
 	forceRestartAnnotation["k8ify.restart-trigger"] = fmt.Sprintf("%d", time.Now().Unix())
-	converter.PatchDeployments(objects.Deployments, modifiedImages.Values, forceRestartAnnotation)
-	converter.PatchStatefulSets(objects.StatefulSets, modifiedImages.Values, forceRestartAnnotation)
+	converter.PatchDeployments(objects.Deployments, modifiedImages.Values, objects.Secrets, forceRestartAnnotation)
+	converter.PatchStatefulSets(objects.StatefulSets, modifiedImages.Values, objects.Secrets, forceRestartAnnotation)
 
 	objects = provider.PatchEncryptedVolumeSchemeAppuioCloudscale(inputs.TargetCfg, config, objects)
 

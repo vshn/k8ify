@@ -14,6 +14,8 @@ spec:
     type: Recreate
   template:
     metadata:
+      annotations:
+        k8ify.restart-trigger-config: d36b6d58c47c163c8695ed95cf11a6217a92a2fe67af11c4f36dbe9d34fa640a
       labels:
         k8ify.ref-slug: oasp
         k8ify.service: fooBar
