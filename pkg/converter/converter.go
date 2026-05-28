@@ -580,11 +580,12 @@ func createServiceMonitorEndpoint(name string, servicePorts []core.ServicePort, 
 }
 
 func createEndpointConf(config *ir.ServiceMonitorConfig, servicePorts []core.ServicePort) prometheusTypes.Endpoint {
+	scheme := prometheusTypes.Scheme("http")
 	endpoint := prometheusTypes.Endpoint{
 		Interval: "30s",
 		Port:     servicePorts[0].Name,
 		Path:     "/actuator/metrics",
-		Scheme:   "http",
+		Scheme:   &scheme,
 	}
 	if config.Interval != nil {
 		endpoint.Interval = prometheusTypes.Duration(*config.Interval)
@@ -593,7 +594,8 @@ func createEndpointConf(config *ir.ServiceMonitorConfig, servicePorts []core.Ser
 		endpoint.Path = *config.Path
 	}
 	if config.Scheme != nil {
-		endpoint.Scheme = *config.Scheme
+		scheme := prometheusTypes.Scheme(*config.Scheme)
+		endpoint.Scheme = &scheme 
 	}
 	if config.EndpointName != nil {
 		found := false
