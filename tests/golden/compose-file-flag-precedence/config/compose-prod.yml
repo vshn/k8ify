@@ -1,0 +1,8 @@
+services:
+  nginx:
+    deploy:
+      replicas: 2
+      resources:
+        reservations:
+          cpus: "0.2"
+          memory: 256M

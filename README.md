@@ -50,8 +50,35 @@ This results in flexibility to support various modes of deployment, be it plain 
 
 - Argument #1: `environment`. Optional.
 - Argument #2: `ref`. Optional.
+- `-f, --file [FILE]`: Compose file to use instead of automatic discovery. Optional, repeatable to merge multiple files. Takes precedence over the `COMPOSE_FILE` environment variable.
 - `--modified-image [IMAGE]`: IMAGE has changed. Optional, repeatable.
 - `--shell-env-file [FILENAME]`: Load additional shell environment variables from file. Optional, repeatable.
+
+##### `--file` / `COMPOSE_FILE` - Specifying the Compose files
+
+By default `k8ify` discovers Compose files in the current working directory (see [`environment`](#environment)). You can point `k8ify` at Compose files in any location — overriding the discovery — either with the `-f`/`--file` flag or via the `COMPOSE_FILE` environment variable.
+
+The `--file` flag can be repeated to merge multiple files (mirroring the `docker compose -f` behaviour):
+
+```console
+k8ify prod --file path/to/compose.yml --file path/to/compose-prod.yml
+```
+
+Equivalently, the `COMPOSE_FILE` environment variable lists one or more Compose files. Multiple files are separated by the `COMPOSE_PATH_SEPARATOR` environment variable, which defaults to the OS path list separator (`:` on Linux/macOS, `;` on Windows):
+
+```console
+COMPOSE_FILE=path/to/compose.yml:path/to/compose-prod.yml k8ify prod
+```
+
+When both are set, the `--file` flag takes precedence over `COMPOSE_FILE`. When neither is set, the automatic discovery is used.
+
+Independently of how the base files were selected, `k8ify` always looks for an environment specific override derived from every base file and merges it on top. The override is found next to its base file by inserting `-<env>` immediately before the extension (e.g. `compose.yml` with env `prod` becomes `compose-prod.yml`, `path/to/compose.yml` becomes `path/to/compose-prod.yml`). An override file that does not exist on disk is silently skipped, so it is enough to list only the base file:
+
+```console
+k8ify prod --file path/to/compose.yml
+```
+
+This loads both `path/to/compose.yml` and `path/to/compose-prod.yml` (the latter overriding the former). Listing an override file explicitly (e.g. via an additional `--file path/to/compose-prod.yml`) is also fine — `k8ify` will not load it twice — which lets you pin the exact set and order of files when needed.
 
 #### `environment`
 

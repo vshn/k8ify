@@ -26,6 +26,11 @@ var (
 
 type Instance struct {
 	Environments map[string]Environment `yaml:"environments"`
+	// Flag is an optional top-level config whose params are merged into every environment.
+	Flag Environment `yaml:"flag"`
+	// Env is an optional top-level config whose vars are merged into every environment
+	// (environment-specific vars take precedence over these).
+	Env Environment `yaml:"env"`
 }
 
 type Environment struct {
@@ -87,8 +92,21 @@ func testInstance(t *testing.T, instanceFile string) {
 	check(os.Chdir(root), "changing working directory")
 
 	for name, env := range i.Environments {
+		// Merge top-level flag params and env vars into the environment.
+		// Environment-specific values take precedence over top-level ones.
+		merged := Environment{
+			Refs:   env.Refs,
+			Params: append(append([]string{}, i.Flag.Params...), env.Params...),
+			Vars:   make(map[string]string, len(i.Env.Vars)+len(env.Vars)),
+		}
+		for k, v := range i.Env.Vars {
+			merged.Vars[k] = v
+		}
+		for k, v := range env.Vars {
+			merged.Vars[k] = v
+		}
 		t.Run(name, func(t *testing.T) {
-			testEnvironment(t, name, env)
+			testEnvironment(t, name, merged)
 		})
 	}
 
