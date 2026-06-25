@@ -1,0 +1,5 @@
+---
+environments:
+  prod: {}
+flag:
+  params: ["--file", "config/compose.yml"]

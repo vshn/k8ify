@@ -38,6 +38,24 @@ func (f *ShellEnvFilesFlag) Type() string {
 	return ".env"
 }
 
+// StringSliceFlag implements pflag.Value for a repeatable string flag.
+type StringSliceFlag struct {
+	Values []string
+}
+
+func (f *StringSliceFlag) Set(value string) error {
+	f.Values = append(f.Values, value)
+	return nil
+}
+
+func (f *StringSliceFlag) String() string {
+	return fmt.Sprintf("%v", f.Values)
+}
+
+func (f *StringSliceFlag) Type() string {
+	return "stringSlice"
+}
+
 type ProviderFlag struct {
 	value string
 }

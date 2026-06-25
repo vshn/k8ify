@@ -1,0 +1,8 @@
+---
+environments:
+  prod: {}
+flag:
+  params: ["--file", "config/compose.yml", "--file", "config/compose-prod.yml"]
+env:
+  vars:
+    COMPOSE_FILE: "config/compose.yml"

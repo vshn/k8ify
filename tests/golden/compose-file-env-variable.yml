@@ -1,0 +1,6 @@
+---
+environments:
+  prod: {}
+env:
+  vars:
+    COMPOSE_FILE: "config/compose.yml:config/compose-other.yml"
