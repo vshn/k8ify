@@ -89,7 +89,7 @@ func WriteManifests(outputDir string, objects converter.Objects) error {
 	logrus.Infof("wrote %d services\n", len(objects.Services))
 
 	for _, serviceMonitor := range objects.ServiceMonitors {
-		err := writeManifest(&serviceMonitor, outputDir+"/"+serviceMonitor.Name+"-servicemonitor.yaml")
+		err := writeManifest(&serviceMonitor, outputDir+"/"+serviceMonitor.GetName()+"-servicemonitor.yaml")
 		if err != nil {
 			return err
 		}

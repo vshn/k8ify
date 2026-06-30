@@ -9,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	composeTypes "github.com/compose-spec/compose-go/v2/types"
-	prometheusTypes "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/vshn/k8ify/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -310,31 +309,31 @@ type ServiceMonitorTlsConfig struct {
 	Cert               *string
 	KeySecretValue     *string
 	InsecureSkipVerify *bool
-	MaxVersion         *prometheusTypes.TLSVersion
-	MinVersion         *prometheusTypes.TLSVersion
+	MaxVersion         *string
+	MinVersion         *string
 	ServerName         *string
 }
 
 var (
-	tlsVersion10 = string(prometheusTypes.TLSVersion10)
-	tlsVersion11 = string(prometheusTypes.TLSVersion11)
-	tlsVersion12 = string(prometheusTypes.TLSVersion12)
-	tlsVersion13 = string(prometheusTypes.TLSVersion13)
+	tlsVersion10 = "TLS10"
+	tlsVersion11 = "TLS11"
+	tlsVersion12 = "TLS12"
+	tlsVersion13 = "TLS13"
 )
 
-func parseTlsVersion(string *string) (*prometheusTypes.TLSVersion, error) {
+func parseTlsVersion(string *string) (*string, error) {
 	if string == nil {
 		return nil, nil
 	}
 	switch *string {
 	case tlsVersion10:
-		return util.GetPointer(prometheusTypes.TLSVersion10), nil
+		return util.GetPointer("TLS10"), nil
 	case tlsVersion11:
-		return util.GetPointer(prometheusTypes.TLSVersion11), nil
+		return util.GetPointer("TLS11"), nil
 	case tlsVersion12:
-		return util.GetPointer(prometheusTypes.TLSVersion12), nil
+		return util.GetPointer("TLS12"), nil
 	case tlsVersion13:
-		return util.GetPointer(prometheusTypes.TLSVersion13), nil
+		return util.GetPointer("TLS13"), nil
 	default:
 		return nil, fmt.Errorf("unknown TLSVersion: %v", *string)
 	}

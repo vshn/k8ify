@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	prometheusTypes "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	assertions "github.com/stretchr/testify/assert"
 	"github.com/vshn/k8ify/pkg/util"
 )
@@ -205,8 +204,8 @@ func TestServiceMonitorTlsConfig(t *testing.T) {
 				Cert:               &monitorCert,
 				KeySecretValue:     &monitorKeySecretValue,
 				InsecureSkipVerify: util.GetPointer(true),
-				MaxVersion:         util.GetPointer(prometheusTypes.TLSVersion13),
-				MinVersion:         util.GetPointer(prometheusTypes.TLSVersion10),
+				MaxVersion:         util.GetPointer("TLS13"),
+				MinVersion:         util.GetPointer("TLS10"),
 				ServerName:         &monitorServerName,
 			},
 		},
@@ -252,7 +251,7 @@ var (
 	monitorPath           = "/actuator/health"
 	monitorScheme         = "http"
 	monitorServerName     = "service.svc"
-	monitorTlsMaxVersion  = string(prometheusTypes.TLSVersion13)
-	monitorTlsMinVersion  = string(prometheusTypes.TLSVersion10)
+	monitorTlsMaxVersion  = "TLS13"
+	monitorTlsMinVersion  = "TLS10"
 	monitorUsername       = "myuser"
 )

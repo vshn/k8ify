@@ -9,9 +9,6 @@ import (
 	"sort"
 	"strings"
 
-	prometheusTypes "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	composeTypes "github.com/compose-spec/compose-go/v2/types"
 	"github.com/sirupsen/logrus"
 	"github.com/vshn/k8ify/pkg/ir"
@@ -505,18 +502,18 @@ func composeServiceToServices(refSlug string, workload *ir.Service, servicePorts
 	return services
 }
 
-func composeServiceToServiceMonitors(refSlug string, workload *ir.ParentService, servicePorts []core.ServicePort, labels map[string]string) ([]ServiceMonitor, []core.Secret) {
+func composeServiceToServiceMonitors(refSlug string, workload *ir.ParentService, servicePorts []core.ServicePort, labels map[string]string) ([]unstructured.Unstructured, []core.Secret) {
 	if len(servicePorts) == 0 {
-		return []ServiceMonitor{}, []core.Secret{}
+		return []unstructured.Unstructured{}, []core.Secret{}
 	}
 	config := ir.ServiceMonitorConfigPointer(workload.Labels())
 	if config == nil {
-		return []ServiceMonitor{}, []core.Secret{}
+		return []unstructured.Unstructured{}, []core.Secret{}
 	}
 
 	resourceName := workload.Name + refSlug
 	endpoint, secrets := createServiceMonitorEndpoint(resourceName, servicePorts, config, workload.Labels())
-	endpoints := []prometheusTypes.Endpoint{endpoint}
+	endpoints := []interface{}{endpoint}
 	for _, part := range workload.GetParts() {
 		partConfig := ir.ServiceMonitorConfigPointer(part.Labels())
 		if partConfig != nil {
@@ -533,29 +530,30 @@ func composeServiceToServiceMonitors(refSlug string, workload *ir.ParentService,
 		}
 		secrets[i].Labels = labels
 	}
-	return []ServiceMonitor{
+	return []unstructured.Unstructured{
 		{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "ServiceMonitor",
-				APIVersion: "monitoring.coreos.com/v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:   resourceName,
-				Labels: labels,
-			},
-			Spec: prometheusTypes.ServiceMonitorSpec{
-				Endpoints: endpoints,
-				Selector: metav1.LabelSelector{
-					MatchLabels: labels,
+			Object: map[string]interface{}{
+				"apiVersion": "monitoring.coreos.com/v1",
+				"kind":       "ServiceMonitor",
+				"metadata": map[string]interface{}{
+					"name":   resourceName,
+					"labels": labels,
+				},
+				"spec": map[string]interface{}{
+					"endpoints":         endpoints,
+					"namespaceSelector": map[string]interface{}{},
+					"selector": map[string]interface{}{
+						"matchLabels": labels,
+					},
 				},
 			},
 		},
 	}, secrets
 }
 
-func createServiceMonitorEndpoint(name string, servicePorts []core.ServicePort, config *ir.ServiceMonitorConfig, labels map[string]string) (prometheusTypes.Endpoint, []core.Secret) {
+func createServiceMonitorEndpoint(name string, servicePorts []core.ServicePort, config *ir.ServiceMonitorConfig, labels map[string]string) (map[string]interface{}, []core.Secret) {
 	endpoint := createEndpointConf(config, servicePorts)
-	secretName := name + "-servicemonitor-" + endpoint.Port
+	secretName := name + "-servicemonitor-" + endpoint["port"].(string)
 	secret := core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: secretName,
@@ -564,11 +562,15 @@ func createServiceMonitorEndpoint(name string, servicePorts []core.ServicePort, 
 	}
 
 	basicAuth, basicAuthEntries := createBasicAuthForEndpoint(secretName, labels)
-	endpoint.BasicAuth = basicAuth
+	if basicAuth != nil {
+		endpoint["basicAuth"] = basicAuth
+	}
 	secret.StringData = util.AppendMap(secret.StringData, basicAuthEntries)
 
 	tlsConfig, tlsConfigEntries := createTlsConfigForEndpoint(secretName, labels)
-	endpoint.TLSConfig = tlsConfig
+	if tlsConfig != nil {
+		endpoint["tlsConfig"] = tlsConfig
+	}
 	secret.StringData = util.AppendMap(secret.StringData, tlsConfigEntries)
 
 	var secretsList []core.Secret
@@ -579,27 +581,27 @@ func createServiceMonitorEndpoint(name string, servicePorts []core.ServicePort, 
 	return endpoint, secretsList
 }
 
-func createEndpointConf(config *ir.ServiceMonitorConfig, servicePorts []core.ServicePort) prometheusTypes.Endpoint {
-	endpoint := prometheusTypes.Endpoint{
-		Interval: "30s",
-		Port:     servicePorts[0].Name,
-		Path:     "/actuator/metrics",
-		Scheme:   "http",
+func createEndpointConf(config *ir.ServiceMonitorConfig, servicePorts []core.ServicePort) map[string]interface{} {
+	endpoint := map[string]interface{}{
+		"interval": "30s",
+		"port":     servicePorts[0].Name,
+		"path":     "/actuator/metrics",
+		"scheme":   "http",
 	}
 	if config.Interval != nil {
-		endpoint.Interval = prometheusTypes.Duration(*config.Interval)
+		endpoint["interval"] = *config.Interval
 	}
 	if config.Path != nil {
-		endpoint.Path = *config.Path
+		endpoint["path"] = *config.Path
 	}
 	if config.Scheme != nil {
-		endpoint.Scheme = *config.Scheme
+		endpoint["scheme"] = *config.Scheme
 	}
 	if config.EndpointName != nil {
 		found := false
 		for _, servicePort := range servicePorts {
 			if servicePort.Name == *config.EndpointName {
-				endpoint.Port = servicePort.Name
+				endpoint["port"] = servicePort.Name
 				found = true
 				break
 			}
@@ -607,14 +609,14 @@ func createEndpointConf(config *ir.ServiceMonitorConfig, servicePorts []core.Ser
 		if !found {
 			logrus.WithFields(logrus.Fields{
 				"configuredPort": *config.EndpointName,
-				"usedPort":       endpoint.Port,
+				"usedPort":       endpoint["port"],
 			}).Warning("Port configuredPort not found, using usedPort.")
 		}
 	}
 	return endpoint
 }
 
-func createBasicAuthForEndpoint(secretName string, labels map[string]string) (*prometheusTypes.BasicAuth, map[string]string) {
+func createBasicAuthForEndpoint(secretName string, labels map[string]string) (map[string]interface{}, map[string]string) {
 	basicAuthConfig, _ := ir.ServiceMonitorBasicAuthConfigPointer(labels)
 	if basicAuthConfig == nil {
 		return nil, map[string]string{}
@@ -623,60 +625,64 @@ func createBasicAuthForEndpoint(secretName string, labels map[string]string) (*p
 		"username": basicAuthConfig.Username,
 		"password": basicAuthConfig.Password,
 	}
-	basicAuth := &prometheusTypes.BasicAuth{
-		Username: secretKeySelector(secretName, "username"),
-		Password: secretKeySelector(secretName, "password"),
+	basicAuth := map[string]interface{}{
+		"username": secretKeySelector(secretName, "username"),
+		"password": secretKeySelector(secretName, "password"),
 	}
 	return basicAuth, secretEntries
 }
 
-func createTlsConfigForEndpoint(secretName string, labels map[string]string) (*prometheusTypes.TLSConfig, map[string]string) {
+func createTlsConfigForEndpoint(secretName string, labels map[string]string) (map[string]interface{}, map[string]string) {
 	labelTlsConfig, _ := ir.ServiceMonitorTlsConfigPointer(labels)
 	if labelTlsConfig == nil {
 		return nil, map[string]string{}
 	}
 
-	safeTlsConfig := prometheusTypes.SafeTLSConfig{
-		InsecureSkipVerify: labelTlsConfig.InsecureSkipVerify,
-		MaxVersion:         labelTlsConfig.MaxVersion,
-		MinVersion:         labelTlsConfig.MinVersion,
-		ServerName:         labelTlsConfig.ServerName,
-	}
-
 	secretEntries := map[string]string{}
-	if labelTlsConfig.Ca != nil {
-		secretKey := "ca"
-		secretEntries[secretKey] = *labelTlsConfig.Ca
-		safeTlsConfig.CA = prometheusTypes.SecretOrConfigMap{
-			Secret: util.GetPointer(secretKeySelector(secretName, secretKey)),
-		}
-	}
+	tlsConfig := map[string]interface{}{}
 
-	if labelTlsConfig.Cert != nil {
-		secretKey := "cert"
-		secretEntries[secretKey] = *labelTlsConfig.Cert
-		safeTlsConfig.Cert = prometheusTypes.SecretOrConfigMap{
-			Secret: util.GetPointer(secretKeySelector(secretName, secretKey)),
-		}
+	ca := map[string]interface{}{}
+	if labelTlsConfig.Ca != nil {
+		ca["secret"] = secretKeySelector(secretName, "ca")
+		secretEntries["ca"] = *labelTlsConfig.Ca
 	}
+	tlsConfig["ca"] = ca
+
+	cert := map[string]interface{}{}
+	if labelTlsConfig.Cert != nil {
+		cert["secret"] = secretKeySelector(secretName, "cert")
+		secretEntries["cert"] = *labelTlsConfig.Cert
+	}
+	tlsConfig["cert"] = cert
 
 	if labelTlsConfig.KeySecretValue != nil {
-		secretKey := "key"
-		secretEntries[secretKey] = *labelTlsConfig.KeySecretValue
-		safeTlsConfig.KeySecret = util.GetPointer(secretKeySelector(secretName, secretKey))
+		tlsConfig["keySecret"] = secretKeySelector(secretName, "key")
+		secretEntries["key"] = *labelTlsConfig.KeySecretValue
 	}
 
-	return util.GetPointer(prometheusTypes.TLSConfig{
-		SafeTLSConfig: safeTlsConfig,
-	}), secretEntries
+	if labelTlsConfig.InsecureSkipVerify != nil {
+		tlsConfig["insecureSkipVerify"] = *labelTlsConfig.InsecureSkipVerify
+	}
+
+	if labelTlsConfig.ServerName != nil {
+		tlsConfig["serverName"] = *labelTlsConfig.ServerName
+	}
+
+	if labelTlsConfig.MinVersion != nil {
+		tlsConfig["minVersion"] = *labelTlsConfig.MinVersion
+	}
+
+	if labelTlsConfig.MaxVersion != nil {
+		tlsConfig["maxVersion"] = *labelTlsConfig.MaxVersion
+	}
+
+	return tlsConfig, secretEntries
 }
 
-func secretKeySelector(secretName string, secretKey string) core.SecretKeySelector {
-	return core.SecretKeySelector{
-		LocalObjectReference: core.LocalObjectReference{
-			Name: secretName,
-		},
-		Key: secretKey,
+func secretKeySelector(secretName string, secretKey string) map[string]interface{} {
+	return map[string]interface{}{
+		"key":  secretKey,
+		"name": secretName,
 	}
 }
 
@@ -1119,12 +1125,6 @@ func composeServiceToPodDisruptionBudget(workload *ir.Service, refSlug string, l
 	return &podDisruptionBudget
 }
 
-type ServiceMonitor prometheusTypes.ServiceMonitor
-
-func (s ServiceMonitor) DeepCopyObject() runtime.Object {
-	panic("Needed for interface runtime.Object. Not implemented because it was not used yet.")
-}
-
 // Objects combines all possible resources the conversion process could produce
 type Objects struct {
 	// Deployments
@@ -1134,7 +1134,7 @@ type Objects struct {
 	Services               []core.Service
 	PersistentVolumeClaims []core.PersistentVolumeClaim
 	Secrets                []core.Secret // You don't have to create secrets for all values. A reference is also possible with _ref_ and _secretRef_.
-	ServiceMonitors        []ServiceMonitor
+	ServiceMonitors        []unstructured.Unstructured
 	Ingresses              []networking.Ingress
 	PodDisruptionBudgets   []v1.PodDisruptionBudget
 	Others                 []unstructured.Unstructured
