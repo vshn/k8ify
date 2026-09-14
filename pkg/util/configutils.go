@@ -107,10 +107,6 @@ func PartOf(labels map[string]string) *string {
 	return GetOptional(labels, "k8ify.partOf")
 }
 
-func InitContainerOf(labels map[string]string) *string {
-	return GetOptional(labels, "k8ify.initContainerOf")
-}
-
 func ImagePullSecret(labels map[string]string) *string {
 	return GetOptional(labels, "k8ify.imagePullSecret")
 }

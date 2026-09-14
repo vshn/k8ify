@@ -31,7 +31,7 @@ func FromCompose(project *composeTypes.Project) *Inputs {
 
 	// first find out all the regular ("parent") services
 	for _, composeService := range project.Services {
-		if util.PartOf(composeService.Labels) != nil || util.InitContainerOf(composeService.Labels) != nil {
+		if util.PartOf(composeService.Labels) != nil {
 			continue
 		}
 		// `project.Services` is a list, so we use the name as reported by the
@@ -73,19 +73,6 @@ func FromCompose(project *composeTypes.Project) *Inputs {
 		}
 	}
 
-        // same for initContainers
-	for _, composeService := range project.Services {
-		initContainerOf := util.InitContainerOf(composeService.Labels)
-		if initContainerOf == nil {
-			continue
-		}
-		parent, ok := inputs.Services[*initContainerOf]
-		if ok {
-			service := NewService(composeService.Name, composeService)
-			parent.AddInitContainer(service)
-		}
-	}
-
 	for name, composeVolume := range project.Volumes {
 		// `project.CollectVolumes` is a map where the key is the volume name, while
 		// `volume.Name` is something else (the name prefixed with `_`???). So
@@ -108,8 +95,6 @@ type ParentService struct {
 	Service
 
 	parts []*Service
-
-	initContainers []*Service
 }
 
 type Service struct {
@@ -132,16 +117,8 @@ func (s *ParentService) AddPart(part *Service) {
 	s.parts = append(s.parts, part)
 }
 
-func (s *ParentService) AddInitContainer(initContainer *Service) {
-	s.initContainers = append(s.initContainers, initContainer)
-}
-
 func (s *ParentService) GetParts() []*Service {
 	return s.parts
-}
-
-func (s *ParentService) GetInitContainers() []*Service {
-	return s.initContainers
 }
 
 // VolumeNames lists the names of all volumes that are mounted by this service

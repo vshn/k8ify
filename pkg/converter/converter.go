@@ -304,22 +304,11 @@ func composeServiceToPodTemplate(
 		}
 		maps.Copy(volumes, cvs)
 	}
-	for _, initContainer := range workload.GetInitContainers() {
-		c, s, cvs := composeServiceToContainer(initContainer, refSlug, projectVolumes, labels)
-		initContainers = append(initContainers, c)
-		if s != nil {
-			secrets = append(secrets, *s)
-		}
-		if util.ImagePullSecret(initContainer.AsCompose().Labels) != nil {
-			imagePullSecret := composeServiceToPullSecret(
-				*util.ImagePullSecret(initContainer.AsCompose().Labels),
-				initContainer.Name+refSlug,
-				labels)
-			secrets = append(secrets, *imagePullSecret)
-			imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name})
-		}
-		maps.Copy(volumes, cvs)
-	}
+	//for _, initContainer := range workload.GetInitContainers() {
+	//	c, s, cvs := composeServiceToContainer(initContainer, refSlug, projectVolumes, labels)
+	//	initContainers = append(initContainers, c)
+	//	maps.Copy(volumes, cvs)
+	//}
 
 	// make sure the array is sorted to have deterministic output
 	keys := make([]string, 0, len(volumes))
@@ -1019,11 +1008,6 @@ func ComposeServiceToK8s(ref string, workload *ir.ParentService, projectVolumes 
 	rwoVolumes, rwxVolumes := workload.Volumes(projectVolumes)
 	for _, part := range workload.GetParts() {
 		rwoV, rwxV := part.Volumes(projectVolumes)
-		maps.Copy(rwoVolumes, rwoV)
-		maps.Copy(rwxVolumes, rwxV)
-	}
-	for _, initContainer := range workload.GetInitContainers() {
-		rwoV, rwxV := initContainer.Volumes(projectVolumes)
 		maps.Copy(rwoVolumes, rwoV)
 		maps.Copy(rwxVolumes, rwxV)
 	}
