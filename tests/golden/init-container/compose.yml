@@ -1,0 +1,12 @@
+services:
+  myservice:
+    image: nginx
+    volumes:
+      - default-data:/data
+    pre_start:
+      - image: myinitcontainer
+        command: "echo init container"
+    
+
+volumes:
+  default-data: {}

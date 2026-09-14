@@ -273,6 +273,7 @@ func composeServiceToPodTemplate(
 ) (core.PodTemplateSpec, []core.Secret) {
 	container, secret, volumes := composeServiceToContainer(workload, refSlug, projectVolumes, labels)
 	containers := []core.Container{container}
+	initContainers := composeServiceToInitContainers(container, workload)
 	secrets := []core.Secret{}
 	if secret != nil {
 		secrets = append(secrets, *secret)
@@ -300,7 +301,6 @@ func composeServiceToPodTemplate(
 				labels)
 			secrets = append(secrets, *imagePullSecret)
 			imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name})
-
 		}
 		maps.Copy(volumes, cvs)
 	}
@@ -321,6 +321,7 @@ func composeServiceToPodTemplate(
 	podSpec := core.PodSpec{
 		EnableServiceLinks: &enableServiceLinks,
 		ImagePullSecrets:   imagePullSecretReference,
+		InitContainers:     initContainers,
 		Containers:         containers,
 		RestartPolicy:      core.RestartPolicyAlways,
 		Volumes:            volumesArray,
@@ -439,6 +440,31 @@ func composeServiceToContainer(
 		Args:            composeService.Command,    // CMD in Docker == 'command' in Compose == 'args' in K8s
 		ImagePullPolicy: core.PullAlways,
 	}, secret, volumes
+}
+
+func composeServiceToInitContainers(
+	container core.Container,
+	workload *ir.ParentService,
+) []core.Container {
+	var initContainers []core.Container
+	for _, serviceHook := range workload.AsCompose().PreStart {
+		image := container.Image
+		if serviceHook.Image != "" {
+			image = serviceHook.Image
+		}
+		initContainer := core.Container{
+			Name:            fmt.Sprintf("%s-init-%d", container.Name, len(initContainers)),
+			Image:           image,
+			EnvFrom:         container.EnvFrom,
+			Env:             container.Env,
+			VolumeMounts:    container.VolumeMounts,
+			Resources:       container.Resources,
+			Command:         serviceHook.Command,
+			ImagePullPolicy: core.PullAlways,
+		}
+		initContainers = append(initContainers, initContainer)
+	}
+	return initContainers
 }
 
 func serviceSpecToService(refSlug string, workload *ir.Service, serviceSpec core.ServiceSpec, labels map[string]string) core.Service {
