@@ -273,6 +273,7 @@ func composeServiceToPodTemplate(
 ) (core.PodTemplateSpec, []core.Secret) {
 	container, secret, volumes := composeServiceToContainer(workload, refSlug, projectVolumes, labels)
 	containers := []core.Container{container}
+	initContainers := []core.Container{}
 	secrets := []core.Secret{}
 	if secret != nil {
 		secrets = append(secrets, *secret)
@@ -300,7 +301,22 @@ func composeServiceToPodTemplate(
 				labels)
 			secrets = append(secrets, *imagePullSecret)
 			imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name})
-
+		}
+		maps.Copy(volumes, cvs)
+	}
+	for _, initContainer := range workload.GetInitContainers() {
+		c, s, cvs := composeServiceToContainer(initContainer, refSlug, projectVolumes, labels)
+		initContainers = append(initContainers, c)
+		if s != nil {
+			secrets = append(secrets, *s)
+		}
+		if util.ImagePullSecret(initContainer.AsCompose().Labels) != nil {
+			imagePullSecret := composeServiceToPullSecret(
+				*util.ImagePullSecret(initContainer.AsCompose().Labels),
+				initContainer.Name+refSlug,
+				labels)
+			secrets = append(secrets, *imagePullSecret)
+			imagePullSecretReference = append(imagePullSecretReference, core.LocalObjectReference{Name: imagePullSecret.Name})
 		}
 		maps.Copy(volumes, cvs)
 	}
@@ -321,6 +337,7 @@ func composeServiceToPodTemplate(
 	podSpec := core.PodSpec{
 		EnableServiceLinks: &enableServiceLinks,
 		ImagePullSecrets:   imagePullSecretReference,
+		InitContainers:     initContainers,
 		Containers:         containers,
 		RestartPolicy:      core.RestartPolicyAlways,
 		Volumes:            volumesArray,
@@ -998,10 +1015,15 @@ func ComposeServiceToK8s(ref string, workload *ir.ParentService, projectVolumes 
 	objects.ServiceMonitors = serviceMonitors
 	objects.Secrets = append(objects.Secrets, serviceMonitorSecrets...)
 
-	// Find volumes used by this service and all its parts
+	// Find volumes used by this service, its parts and its initContainers
 	rwoVolumes, rwxVolumes := workload.Volumes(projectVolumes)
 	for _, part := range workload.GetParts() {
 		rwoV, rwxV := part.Volumes(projectVolumes)
+		maps.Copy(rwoVolumes, rwoV)
+		maps.Copy(rwxVolumes, rwxV)
+	}
+	for _, initContainer := range workload.GetInitContainers() {
+		rwoV, rwxV := initContainer.Volumes(projectVolumes)
 		maps.Copy(rwoVolumes, rwoV)
 		maps.Copy(rwxVolumes, rwxV)
 	}

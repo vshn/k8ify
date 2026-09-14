@@ -42,6 +42,17 @@ func ComposeServicePrecheck(inputs *ir.Inputs) {
 				os.Exit(1)
 			}
 		}
+		for _, initContainer := range service.GetInitContainers() {
+			initContainerSingleton := util.IsSingleton(initContainer.AsCompose().Labels)
+			if initContainerSingleton && !parentSingleton {
+				logrus.Errorf("Singleton compose service '%s' can't be initContainer of non-singleton compose service '%s'", initContainer.Name, service.Name)
+				os.Exit(1)
+			}
+			if !initContainerSingleton && parentSingleton {
+				logrus.Errorf("Non-singleton compose service '%s' can't be initContainer of singleton compose service '%s'", initContainer.Name, service.Name)
+				os.Exit(1)
+			}
+		}
 		environmentValues := service.AsCompose().Environment
 		for key, value := range environmentValues {
 			if value == nil {

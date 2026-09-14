@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: null
+  labels:
+    k8ify.ref-slug: oasp
+    k8ify.service: myservice
+  name: myservice-oasp
+spec:
+  selector:
+    matchLabels:
+      k8ify.ref-slug: oasp
+      k8ify.service: myservice
+  serviceName: myservice-oasp
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: myservice
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: k8ify.service
+                operator: In
+                values:
+                - myservice
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: myservice-oasp
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: default-data
+      enableServiceLinks: false
+      initContainers:
+      - image: initcontainer
+        imagePullPolicy: Always
+        name: myinitcontainer-oasp
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: default-data
+      restartPolicy: Always
+  updateStrategy: {}
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8ify.ref-slug: oasp
+        k8ify.service: myservice
+      name: default-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+    status: {}
+status:
+  availableReplicas: 0
+  replicas: 0
