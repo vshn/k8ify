@@ -36,6 +36,25 @@ spec:
         - mountPath: /data
           name: default-data
       enableServiceLinks: false
+      initContainers:
+      - image: myinitcontainer
+        imagePullPolicy: Always
+        name: myservice-oasp
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: default-data
+      - command:
+        - echo
+        - init
+        - container
+        image: nginx
+        imagePullPolicy: Always
+        name: myservice-oasp
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: default-data
       restartPolicy: Always
   updateStrategy: {}
   volumeClaimTemplates:

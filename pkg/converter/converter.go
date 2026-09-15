@@ -273,7 +273,7 @@ func composeServiceToPodTemplate(
 ) (core.PodTemplateSpec, []core.Secret) {
 	container, secret, volumes := composeServiceToContainer(workload, refSlug, projectVolumes, labels)
 	containers := []core.Container{container}
-	initContainers := []core.Container{}
+	initContainers := composeServiceToInitContainers(container, workload)
 	secrets := []core.Secret{}
 	if secret != nil {
 		secrets = append(secrets, *secret)
@@ -445,6 +445,31 @@ func composeServiceToContainer(
 		Args:            composeService.Command,    // CMD in Docker == 'command' in Compose == 'args' in K8s
 		ImagePullPolicy: core.PullAlways,
 	}, secret, volumes
+}
+
+func composeServiceToInitContainers(
+	container core.Container,
+	workload *ir.ParentService,
+) []core.Container {
+	var initContainers []core.Container
+	for _, serviceHook := range workload.AsCompose().PreStart {
+		image := container.Image
+		if serviceHook.Image != "" {
+			image = serviceHook.Image
+		}
+		initContainer := core.Container{
+			Name:            container.Name,
+			Image:           image,
+			EnvFrom:         container.EnvFrom,
+			Env:             container.Env,
+			VolumeMounts:    container.VolumeMounts,
+			Resources:       container.Resources,
+			Command:         serviceHook.Command,
+			ImagePullPolicy: core.PullAlways,
+		}
+		initContainers = append(initContainers, initContainer)
+	}
+	return initContainers
 }
 
 func serviceSpecToService(refSlug string, workload *ir.Service, serviceSpec core.ServiceSpec, labels map[string]string) core.Service {
@@ -1004,7 +1029,7 @@ func ComposeServiceToK8s(ref string, workload *ir.ParentService, projectVolumes 
 	objects.ServiceMonitors = serviceMonitors
 	objects.Secrets = append(objects.Secrets, serviceMonitorSecrets...)
 
-	// Find volumes used by this service, its parts and its initContainers
+	// Find volumes used by this service and its parts
 	rwoVolumes, rwxVolumes := workload.Volumes(projectVolumes)
 	for _, part := range workload.GetParts() {
 		rwoV, rwxV := part.Volumes(projectVolumes)
