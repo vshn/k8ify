@@ -37,20 +37,13 @@ spec:
           name: default-data
       enableServiceLinks: false
       initContainers:
-      - image: myinitcontainer
-        imagePullPolicy: Always
-        name: myservice-oasp
-        resources: {}
-        volumeMounts:
-        - mountPath: /data
-          name: default-data
       - command:
         - echo
         - init
         - container
-        image: nginx
+        image: myinitcontainer
         imagePullPolicy: Always
-        name: myservice-oasp
+        name: myservice-oasp-init-0
         resources: {}
         volumeMounts:
         - mountPath: /data

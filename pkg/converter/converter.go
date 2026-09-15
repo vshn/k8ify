@@ -458,7 +458,7 @@ func composeServiceToInitContainers(
 			image = serviceHook.Image
 		}
 		initContainer := core.Container{
-			Name:            container.Name,
+			Name:            fmt.Sprintf("%s-init-%d", container.Name, len(initContainers)),
 			Image:           image,
 			EnvFrom:         container.EnvFrom,
 			Env:             container.Env,
