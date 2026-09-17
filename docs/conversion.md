@@ -171,7 +171,7 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: myapp-data
-          # By default no lifecycle hooks are configured but they can be configured via `services.$name.pre_start` and `$services.$name.pre_stop`.
+          # By default no lifecycle hooks are configured but preStop hooks can be configured via `$services.$name.pre_stop`.
           lifecycle:
             preStop:
               exec:
@@ -226,6 +226,11 @@ spec:
           imagePullPolicy: Always
           # `services.$name.labels["k8ify.serviceAccountName"], not set by default
           serviceAccountName: "myappk8saccess"
+      initContainers:
+        # initContainers are derived from `services.$name.pre_start`. They inherit most settings from the main
+        # container, including volume mounts but excluding ports. Multiple pre_start entries result in multiple
+        # initContainers. You likely want to override the `image` and the `command`. Other compose paramameters
+        # are currently not supported.
       # Values from `services.$name.volumes`, translated as the volumeMounts above
       volumes:
         - name: myapp-data
@@ -313,7 +318,7 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: myapp-data
-          # By default no lifecycle hooks are configured but they can be configured via `services.$name.pre_start` and `$services.$name.pre_stop`.
+          # By default no lifecycle hooks are configured but preStop hooks can be configured via `$services.$name.pre_stop`.
           lifecycle:
             preStop:
               exec:
@@ -368,6 +373,11 @@ spec:
           imagePullPolicy: Always
           # `services.$name.labels["k8ify.serviceAccountName"], not set by default
           serviceAccountName: "myappk8saccess"
+      initContainers:
+        # initContainers are derived from `services.$name.pre_start`. They inherit most settings from the main
+        # container, including volume mounts but excluding ports. Multiple pre_start entries result in multiple
+        # initContainers. You likely want to override the `image` and the `command`. Other compose paramameters
+        # are currently not supported.
       # See PersistentVolumeClaim below for how the values are generated.
       volumeTemplates:
         - metadata:
